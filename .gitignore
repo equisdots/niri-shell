@@ -1,0 +1,13 @@
+# Generated / transient artefacts
+*.tmp
+*.bak
+*~
+
+# Editor and OS noise
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Never commit secrets or machine-local state
+*.local
