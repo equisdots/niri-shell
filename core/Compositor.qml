@@ -66,7 +66,10 @@ QtObject {
     signal monitorListReady(var list)
     signal compositorVersionReady(var version)
 
-    Connections {
+    // A QtObject has no default property, so a Connections CANNOT be declared
+    // as a child here (doing so makes the shell fail to load with "Cannot
+    // assign to non-existent default property"). Hold it as a property instead.
+    readonly property Connections _backendConn: Connections {
         target: root.backend
         function onMonitorListReady(list) { root.monitorListReady(list); }
         function onVersionReady(version) { root.compositorVersionReady(version); }
