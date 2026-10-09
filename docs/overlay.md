@@ -9,7 +9,7 @@ are the default.
 
 Source (this repo) | Target (shell tree) | Kind | Notes
 --- | --- | --- | ---
-`core/Compositor.qml` | `core/Compositor.qml` | modified | Adds `XDG_CURRENT_DESKTOP` backend selection, the neutral persistence methods and the neutral monitor/version/launch/session helpers (`monitorListCommand`, `refreshMonitorList`, `monitorsFromOutput`, `applyMonitorScale`, `applyMonitorConfig`, `compositorVersion`, `execApp`, `hasSubmaps`, `setSubmap`, `idleMode`, `quit`). Existing surface unchanged.
+`core/Compositor.qml` | `core/Compositor.qml` | modified | Adds backend selection on `XDG_CURRENT_DESKTOP` **or** a set `NIRI_SOCKET`, the neutral persistence methods and the neutral monitor/version/launch/session helpers (`monitorListCommand`, `refreshMonitorList`, `monitorsFromOutput`, `applyMonitorScale`, `applyMonitorConfig`, `compositorVersion`, `execApp`, `hasSubmaps`, `setSubmap`, `idleMode`, `quit`). The backend signal relay is held in the `_backendConn` property, because a `QtObject` has no default property and a child `Connections { }` made Quickshell fail to load the whole config. Existing surface unchanged.
 `core/compositors/Hyprland.qml` | `core/compositors/Hyprland.qml` | modified | Keeps every original command/script; adds `displayPoller`, `persistKeybinds`, `persistStartup`, `applyMonitors`, `resetMonitors`, `reload`, plus `monitorList`/`applyMonitorScale`/`applyMonitorConfig`/`compositorVersion`/`execApp`/`setSubmap`/`idleMode`/`quit` and `hasSubmaps = true`.
 `core/compositors/Niri.qml` | `core/compositors/Niri.qml` | **new** | niri backend over `niri msg`, implementing the same surface (`idleMode` via `niri_idle_mode.sh`, `quit` via `niri msg action quit --skip-confirmation`, `hasSubmaps = false`).
 `core/Config.qml` | `core/Config.qml` | modified | Keybind/startup/monitor persistence routes through `Compositor`. Same `settings.json` contract and monitor canvas math.
@@ -66,8 +66,9 @@ Every one that a user can reach from a widget is in this overlay: the seam
 (`Compositor`, `Config`), the leaf scripts, and the consumers
 (`ScalePicker`, `DavincixPicker`, `sysinfo.sh`, `appLauncher`, `KeybindTab`,
 `focus_daemon.py`, `IdlePopup`, `IdlePage`, `BarEditor`, `BatteryPopup`,
-`BatteryPopupAlt`). They now call the active backend or branch on
-`XDG_CURRENT_DESKTOP`; no widget calls `hyprctl` directly. Base files that
+`BatteryPopupAlt`, plus the `Colors` border-palette derivation). They now call
+the active backend or branch on `XDG_CURRENT_DESKTOP`; no widget calls
+`hyprctl` directly. Base files that
 already work unchanged under niri (the QML widgets, palettes, `WlrLayershell`,
 `WlSessionLock`, the other watchers) are **not** shipped. The one remaining read
 that has no niri equivalent is documented below.
@@ -86,6 +87,30 @@ A base consumer is copied only when a compositor-facing line has to change
 (`BarEditor.qml`, the two battery popups, the two idle consumers); everywhere
 else the shim keeps the overlay a pure drop-in, with no large consumer file to
 drift from the base shell.
+
+### Bring-up notes (niri)
+
+- **Backend detection.** `isNiri` is true when `XDG_CURRENT_DESKTOP` contains
+  `niri` or `NIRI_SOCKET` is set. niri exports both to its children, so either
+  signal is sufficient and a session manager that drops `XDG_CURRENT_DESKTOP` no
+  longer misroutes to the Hyprland backend.
+- **`QtObject` has no default property.** `core/Compositor.qml` holds its
+  backend signal relay in the `_backendConn` property; declaring `Connections
+  { }` as a child made Quickshell fail to load the whole config under niri
+  ("Cannot assign to non-existent default property"), which appears as a missing
+  bar and panel shortcuts that do nothing. Hyprland was unaffected because it
+  reads the original files.
+- **One-line KDL blocks are invalid.** `Niri.qml` always writes multi-line
+  blocks, because a block whose last node is not terminated before `}` (for
+  example `focus-ring { off }`) made `generated/borders.kdl` invalid and niri
+  fell back to its default config.
+- **Neutral border colour.** `ui/bar/Colors.qml` is overlaid (see the map
+  above): `borderHex("active")` uses the palette's muted `color8` instead of the
+  loud accent, so the niri border is a neutral grey that is harmonious across
+  palettes. Manual `borderFollowPalette=false` overrides and per-palette roles
+  still win.
+- **Notifications.** The shell owns `org.freedesktop.notifications`; unlike a
+  standalone compositor setup, `mako`/`dunst` must not run alongside it.
 
 ## niri config include contract
 
@@ -130,9 +155,9 @@ restore:
    `ui/settings/tabs/KeybindTab.qml`,
    `ui/panels/focustime/focus_daemon.py`,
    `ui/panels/idle/IdlePopup.qml`, `ui/bar/editor/IdlePage.qml`,
-   `ui/bar/BarEditor.qml`,
-   `ui/bar/popups/battery/BatteryPopup.qml`,
-   `ui/bar/popups/battery/BatteryPopupAlt.qml`.
+    `ui/bar/BarEditor.qml`,
+    `ui/bar/popups/battery/BatteryPopup.qml`,
+    `ui/bar/popups/battery/BatteryPopupAlt.qml`, `ui/bar/Colors.qml`.
 2. Remove the new files: `core/compositors/Niri.qml`, `core/Effects.qml`,
    `core/scripts/effects.sh`, `core/scripts/niri-workspaces.sh`,
    `ui/bar/editor/persist-appearance.sh`.

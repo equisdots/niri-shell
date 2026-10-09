@@ -33,7 +33,18 @@ else in the shell does.
 Selection is `XDG_CURRENT_DESKTOP`: a value containing `niri` chooses the niri
 backend, anything else (including an unset variable) chooses Hyprland. The
 Hyprland default is deliberate: installing the niri meta must not change a
-Hyprland user's session.
+Hyprland user's session. A set `NIRI_SOCKET` also selects niri, because niri
+exports both signals to its children and this keeps detection correct under a
+session manager that does not forward `XDG_CURRENT_DESKTOP`.
+
+`core/Compositor.qml` is a `QtObject` singleton, which has no default property.
+The backend-to-seam signal relay (`monitorListReady`, `compositorVersionReady`)
+must therefore be held in a property (`_backendConn`), not declared as a child
+`Connections { }`. A child declaration made Quickshell fail to load the entire
+config under niri ("Cannot assign to non-existent default property"), leaving no
+bar or panels and dead panel shortcuts; Hyprland was unaffected because it reads
+the original files. This is a general QML gotcha for this overlay, not a niri
+bug.
 
 ## 2. The compositor-neutral persistence contract
 
@@ -79,7 +90,14 @@ Properties of the contract:
 
 - **Borders** map to `layout { border { ... } }` with `focus-ring { off }` so
   there is a single active indicator, matching the Hyprland look. `borders.kdl`
-  sets colours only; `theme-effects.kdl` owns `border width`.
+  sets colours only; `theme-effects.kdl` owns `border width`. The overlay ships
+  `ui/bar/Colors.qml`, whose `borderHex("active")` derives from the palette's
+  muted `color8` instead of the loud accent, so the niri border is a neutral
+  grey that stays harmonious across palettes (manual `borderFollowPalette=false`
+  overrides and per-palette roles still win). `Niri.qml` writes the block over
+  multiple lines: niri rejects a one-line block whose last node is not
+  terminated before `}` (`focus-ring { off }` produced an invalid file and niri
+  fell back to its default config).
 - **Gaps**: the UI exposes `gaps_in` and `gaps_out`; niri has one `gaps` value
   plus `struts`. The generated KDL uses `gaps = gaps_in` and equal `struts =
   max(0, gaps_out - gaps_in)`.
@@ -99,6 +117,10 @@ Properties of the contract:
   pill row the UI already renders.
 - **Keyboard layout switching** is global in niri (`switch-layout next`); there
   is no per-device selector.
+- **Notifications / VFX**: notification popups follow the active palette (the
+  `_theme` Colors instance reads it), so popups restyle with the bar on both
+  compositors. The shell owns the `org.freedesktop.notifications` name, so a
+  rival notification daemon (`mako`, `dunst`) must not be started alongside it.
 
 ## 4. Hard UI rule
 

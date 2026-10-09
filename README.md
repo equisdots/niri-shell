@@ -7,7 +7,7 @@ editor and lock screen run on **both Hyprland and niri** with no UI loss.
 This repository does not contain the shell. It contains only the files that must
 change or that are new. `niri-meta` deploys them over the shared shell tree at
 `~/.config/hypr/scripts/quickshell/`, and the shell chooses a backend at runtime
-from `XDG_CURRENT_DESKTOP`.
+from `XDG_CURRENT_DESKTOP` / `NIRI_SOCKET`.
 
 ## The overlay model
 
@@ -31,11 +31,15 @@ rollback procedure.
 
 ## Backend selection
 
-`core/Compositor.qml` reads `XDG_CURRENT_DESKTOP`:
+`core/Compositor.qml` selects the backend from the environment:
 
-- a value containing `niri` selects `core/compositors/Niri.qml`;
-- any other value, or an unset variable, selects
-  `core/compositors/Hyprland.qml`.
+- `XDG_CURRENT_DESKTOP` containing `niri`, or a set `NIRI_SOCKET`, selects
+  `core/compositors/Niri.qml`;
+- any other value, or both unset, selects `core/compositors/Hyprland.qml`.
+
+niri sets both `XDG_CURRENT_DESKTOP=niri` and `NIRI_SOCKET` for the processes it
+spawns, so accepting either signal keeps the backend correct under a session
+manager that does not export `XDG_CURRENT_DESKTOP`.
 
 Both backends exist at once; only the selected one is read. Widgets never branch
 on the compositor: they consume `Compositor.workspacesCommand`,
@@ -59,6 +63,27 @@ persistence calls (`persistKeybinds`, `persistStartup`, `applyMonitors`,
 All niri writes land in `~/.config/niri/generated/` and are applied with
 `niri msg action load-config-file`. The niri config must include them (see
 [docs/overlay.md](docs/overlay.md)).
+
+## Known QML gotchas
+
+Three bring-up issues are worth knowing before touching the overlay:
+
+- **`QtObject` has no default property.** A `Connections { }` (or any child
+  item) declared directly inside the `core/Compositor.qml` singleton makes
+  Quickshell fail to load the whole config with "Cannot assign to non-existent
+  default property", which presents as a missing bar and dead panel shortcuts.
+  Hold it in a property instead (see `_backendConn`). Hyprland was unaffected
+  because it uses the original, unmodified files.
+- **niri rejects one-line KDL blocks.** A block whose last node is not
+  terminated before `}` (for example `focus-ring { off }`) makes the generated
+  file invalid and niri falls back to its default config. `Niri.qml` writes
+  multi-line blocks (`focus-ring {`, `off`, `}`) into
+  `generated/borders.kdl`.
+- **Palette accent vs muted border.** `ui/bar/Colors.qml` is shipped by this
+  overlay: `borderHex("active")` derives from the palette's muted `color8`
+  rather than the loud accent, so the niri border stays a neutral grey that is
+  harmonious across palettes. Manual overrides (`borderFollowPalette=false`)
+  and per-palette roles still win.
 
 ## Data root
 
