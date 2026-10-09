@@ -32,6 +32,7 @@ Source (this repo) | Target (shell tree) | Kind | Notes
 `ui/bar/BarEditor.qml` | `ui/bar/BarEditor.qml` | modified | The app-scale step (`appScaleStep`) calls `Compositor.applyMonitorScale("", Config.appScale)` instead of `scale-menu.sh`.
 `ui/bar/popups/battery/BatteryPopup.qml` | `ui/bar/popups/battery/BatteryPopup.qml` | modified | Logout button calls `Compositor.quit()` instead of `exit.sh`; keeps the reveal-on-hover UX, the exit animation and the widget-state close.
 `ui/bar/popups/battery/BatteryPopupAlt.qml` | `ui/bar/popups/battery/BatteryPopupAlt.qml` | modified | Same logout routing through `Compositor.quit()`, same preserved UX.
+`ui/bar/Colors.qml` | `ui/bar/Colors.qml` | modified | `borderHex("active")` derives from the palette's muted `color8` instead of the loud accent, so the niri border is a neutral grey that stays harmonious across palettes (manual overrides and per-palette roles still win).
 
 ### Neutral backend surface
 
