@@ -9,9 +9,9 @@ are the default.
 
 Source (this repo) | Target (shell tree) | Kind | Notes
 --- | --- | --- | ---
-`core/Compositor.qml` | `core/Compositor.qml` | modified | Adds `XDG_CURRENT_DESKTOP` backend selection, the neutral persistence methods and the neutral monitor/version/launch helpers (`monitorListCommand`, `refreshMonitorList`, `monitorsFromOutput`, `applyMonitorScale`, `applyMonitorConfig`, `compositorVersion`, `execApp`, `hasSubmaps`, `setSubmap`). Existing surface unchanged.
-`core/compositors/Hyprland.qml` | `core/compositors/Hyprland.qml` | modified | Keeps every original command/script; adds `displayPoller`, `persistKeybinds`, `persistStartup`, `applyMonitors`, `resetMonitors`, `reload`, plus `monitorList`/`applyMonitorScale`/`applyMonitorConfig`/`compositorVersion`/`execApp`/`setSubmap` and `hasSubmaps = true`.
-`core/compositors/Niri.qml` | `core/compositors/Niri.qml` | **new** | niri backend over `niri msg`, implementing the same surface (`hasSubmaps = false`).
+`core/Compositor.qml` | `core/Compositor.qml` | modified | Adds `XDG_CURRENT_DESKTOP` backend selection, the neutral persistence methods and the neutral monitor/version/launch/session helpers (`monitorListCommand`, `refreshMonitorList`, `monitorsFromOutput`, `applyMonitorScale`, `applyMonitorConfig`, `compositorVersion`, `execApp`, `hasSubmaps`, `setSubmap`, `idleMode`, `quit`). Existing surface unchanged.
+`core/compositors/Hyprland.qml` | `core/compositors/Hyprland.qml` | modified | Keeps every original command/script; adds `displayPoller`, `persistKeybinds`, `persistStartup`, `applyMonitors`, `resetMonitors`, `reload`, plus `monitorList`/`applyMonitorScale`/`applyMonitorConfig`/`compositorVersion`/`execApp`/`setSubmap`/`idleMode`/`quit` and `hasSubmaps = true`.
+`core/compositors/Niri.qml` | `core/compositors/Niri.qml` | **new** | niri backend over `niri msg`, implementing the same surface (`idleMode` via `niri_idle_mode.sh`, `quit` via `niri msg action quit --skip-confirmation`, `hasSubmaps = false`).
 `core/Config.qml` | `core/Config.qml` | modified | Keybind/startup/monitor persistence routes through `Compositor`. Same `settings.json` contract and monitor canvas math.
 `core/Effects.qml` | `core/Effects.qml` | **new** | Neutral effects singleton (same API as the old `HyprEffects`), backed by `effects.sh`.
 `core/HyprEffects.qml` | `core/HyprEffects.qml` | modified | Compatibility shim: forwards to `Effects` so `HyprlandPage.qml`/`WindowControls.qml` need no edit.
@@ -27,6 +27,11 @@ Source (this repo) | Target (shell tree) | Kind | Notes
 `ui/bar/popups/applauncher/appLauncher.qml` | `ui/bar/popups/applauncher/appLauncher.qml` | modified | Launches through `Compositor.execApp` (`Quickshell.execDetached`) instead of `hyprctl eval 'hl.dsp.exec_cmd(...)'`.
 `ui/settings/tabs/KeybindTab.qml` | `ui/settings/tabs/KeybindTab.qml` | modified | Submap enter/reset goes through `Compositor.setSubmap` and is skipped when `Compositor.hasSubmaps` is false; a short note is shown on niri. No crash without submap support.
 `ui/panels/focustime/focus_daemon.py` | `ui/panels/focustime/focus_daemon.py` | modified | Compositor-aware focus listener (`niri msg --json event-stream` under niri, `.socket2.sock` under Hyprland) and lock detection. Output contract (`focustime.db` schema + `focustime_state.json`) unchanged, so `FocusModule.qml`/`FocusTimePopup.qml` need no edit.
+`ui/panels/idle/IdlePopup.qml` | `ui/panels/idle/IdlePopup.qml` | modified | Mode switch calls `Compositor.idleMode(mode)` instead of `~/.config/hypr/scripts/idle-mode.sh`. The lock button keeps the shared `lock.sh` (compositor-neutral ext-session-lock).
+`ui/bar/editor/IdlePage.qml` | `ui/bar/editor/IdlePage.qml` | modified | Same idle routing through `Compositor.idleMode`; adds `import "../../../core"`. The reactive state file (`~/.config/hypr/idle-settings.json`) is unchanged and shared by both stacks.
+`ui/bar/BarEditor.qml` | `ui/bar/BarEditor.qml` | modified | The app-scale step (`appScaleStep`) calls `Compositor.applyMonitorScale("", Config.appScale)` instead of `scale-menu.sh`.
+`ui/bar/popups/battery/BatteryPopup.qml` | `ui/bar/popups/battery/BatteryPopup.qml` | modified | Logout button calls `Compositor.quit()` instead of `exit.sh`; keeps the reveal-on-hover UX, the exit animation and the widget-state close.
+`ui/bar/popups/battery/BatteryPopupAlt.qml` | `ui/bar/popups/battery/BatteryPopupAlt.qml` | modified | Same logout routing through `Compositor.quit()`, same preserved UX.
 
 ### Neutral backend surface
 
@@ -45,6 +50,8 @@ implement every one.
 | `execApp(command)` | `Quickshell.execDetached(["bash","-c", …])` | same (no compositor involvement) |
 | `hasSubmaps` | `true` | `false` |
 | `setSubmap(name)` | `hyprctl eval 'hl.dispatch(hl.dsp.submap(name))'` | no-op |
+| `idleMode(mode)` | `~/.config/hypr/scripts/idle-mode.sh <mode>` | `~/.config/niri/scripts/niri_idle_mode.sh <mode>` |
+| `quit()` | `~/.config/hypr/scripts/exit.sh` | `niri msg action quit --skip-confirmation` |
 
 Monitor entries use the neutral shape `{ name, description, width, height,
 scale, focused, refreshRate, x, y, transform, modes }`; niri millihertz and
@@ -52,11 +59,13 @@ scale, focused, refreshRate, x, y, transform, modes }`; niri millihertz and
 
 ### Why these files
 
-The base shell has a set of direct `hyprctl` touch points. Every one that a
-user can reach from a widget is in this overlay: the seam (`Compositor`,
-`Config`), the leaf scripts, and the panels/settings/daemon consumers
+The base shell has a set of compositor-coupled touch points: direct `hyprctl`
+calls plus the session scripts (`idle-mode.sh`, `scale-menu.sh`, `exit.sh`).
+Every one that a user can reach from a widget is in this overlay: the seam
+(`Compositor`, `Config`), the leaf scripts, and the consumers
 (`ScalePicker`, `DavincixPicker`, `sysinfo.sh`, `appLauncher`, `KeybindTab`,
-`focus_daemon.py`). They now call the active backend or branch on
+`focus_daemon.py`, `IdlePopup`, `IdlePage`, `BarEditor`, `BatteryPopup`,
+`BatteryPopupAlt`). They now call the active backend or branch on
 `XDG_CURRENT_DESKTOP`; no widget calls `hyprctl` directly. Base files that
 already work unchanged under niri (the QML widgets, palettes, `WlrLayershell`,
 `WlSessionLock`, the other watchers) are **not** shipped. The one remaining read
@@ -72,8 +81,10 @@ Two base consumers reference legacy names:
 - `ui/bar/BarEditor.qml` calls `persist-hypr.sh`. The `ui/bar/editor/persist-hypr.sh`
   forwarder delegates to `persist-appearance.sh`.
 
-This keeps the overlay a pure drop-in: no large consumer file is copied, so it
-cannot drift from the base shell.
+A base consumer is copied only when a compositor-facing line has to change
+(`BarEditor.qml`, the two battery popups, the two idle consumers); everywhere
+else the shim keeps the overlay a pure drop-in, with no large consumer file to
+drift from the base shell.
 
 ## niri config include contract
 
@@ -116,7 +127,11 @@ restore:
    `ui/panels/davincix/DavincixPicker.qml`, `ui/bar/editor/sysinfo.sh`,
    `ui/bar/popups/applauncher/appLauncher.qml`,
    `ui/settings/tabs/KeybindTab.qml`,
-   `ui/panels/focustime/focus_daemon.py`.
+   `ui/panels/focustime/focus_daemon.py`,
+   `ui/panels/idle/IdlePopup.qml`, `ui/bar/editor/IdlePage.qml`,
+   `ui/bar/BarEditor.qml`,
+   `ui/bar/popups/battery/BatteryPopup.qml`,
+   `ui/bar/popups/battery/BatteryPopupAlt.qml`.
 2. Remove the new files: `core/compositors/Niri.qml`, `core/Effects.qml`,
    `core/scripts/effects.sh`, `core/scripts/niri-workspaces.sh`,
    `ui/bar/editor/persist-appearance.sh`.
@@ -152,7 +167,11 @@ These are inherent niri 26.04 limitations, not overlay bugs:
 ## Remaining direct `hyprctl` call sites
 
 The five call sites that were previously listed here are now in the overlay (see
-the file map above). The only base file still calling `hyprctl` directly is:
+the file map above). The session script call sites are closed too: no widget
+invokes `idle-mode.sh`, `scale-menu.sh` or `exit.sh` directly anymore. They go
+through `Compositor.idleMode`, `Compositor.applyMonitorScale` and
+`Compositor.quit`, which select the niri equivalents. The only base file still
+calling `hyprctl` directly is:
 
 - `ui/bar/editor/InputPage.qml` — seeds the live `input:*` values with
   `hyprctl getoption` (read-only). The write path already goes through the

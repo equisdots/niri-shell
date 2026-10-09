@@ -22,6 +22,8 @@ pragma Singleton
 //   applyMonitorScale(name, scale), applyMonitorConfig(descriptor),
 //   compositorVersion(), refreshCompositorVersion(), execApp(command),
 //   hasSubmaps, setSubmap(name).
+// Plus the neutral session actions added for the idle panel and the battery
+// popups: idleMode(mode), quit().
 // ═══════════════════════════════════════════════════════════════════════════
 import QtQuick
 import Quickshell
@@ -78,6 +80,19 @@ QtObject {
 
     function cycleKeyboardLayout() {
         root.backend.cycleKeyboardLayout();
+    }
+
+    // ── neutral session actions (idle panel + battery popups) ──────────────
+    // Idle mode: awake|normal|boot (same verbs in both stacks' scripts); the
+    // backend owns the daemon (hypridle vs swayidle) and the state file.
+    function idleMode(mode) {
+        root.backend.idleMode(mode);
+    }
+
+    // Quit / logout the session. The backend keeps its own semantics
+    // (Hyprland exit.sh vs `niri msg action quit`).
+    function quit() {
+        root.backend.quit();
     }
 
     // ── neutral persistence (Config.qml routes through these) ──────────────

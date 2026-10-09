@@ -82,6 +82,19 @@ QtObject {
         Quickshell.execDetached(["niri", "msg", "action", "switch-layout", "next"]);
     }
 
+    // ── neutral session actions ────────────────────────────────────────────
+    // The niri stack ships the equivalent idle controller; same verbs and the
+    // same ~/.config/hypr/idle-settings.json state as the Hyprland script.
+    function idleMode(mode) {
+        Quickshell.execDetached(["bash", Quickshell.env("HOME") + "/.config/niri/scripts/niri_idle_mode.sh", String(mode)]);
+    }
+
+    // niri shows a confirmation dialog by default; skip it so the battery
+    // popup logout is as immediate as the Hyprland exit.sh path.
+    function quit() {
+        Quickshell.execDetached(["niri", "msg", "action", "quit", "--skip-confirmation"]);
+    }
+
     // ── stateful monitor poller ────────────────────────────────────────────
     signal monitorsDecoded(var data)
 

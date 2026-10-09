@@ -56,6 +56,17 @@ QtObject {
         Quickshell.execDetached(["hyprctl", "switchxkblayout", "main", "next"]);
     }
 
+    // ── neutral session actions ────────────────────────────────────────────
+    // Byte-identical to the pre-port calls in IdlePopup.qml / IdlePage.qml.
+    function idleMode(mode) {
+        Quickshell.execDetached(["bash", Quickshell.env("HOME") + "/.config/hypr/scripts/idle-mode.sh", String(mode)]);
+    }
+
+    // Byte-identical to the pre-port logout call in the battery popups.
+    function quit() {
+        Quickshell.execDetached(["bash", "-c", "~/.config/hypr/scripts/exit.sh"]);
+    }
+
     // ── stateful monitor poller ────────────────────────────────────────────
     // Emits the raw `hyprctl monitors -j` array once per read. Config.qml
     // receives it through `onMonitorsDecoded` and populates its model, so all

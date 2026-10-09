@@ -16,6 +16,8 @@ It exposes:
   `keyboardCommand`, `focusCommand`);
 - the live actions (`setWindowBorders`, `switchWorkspace`,
   `cycleKeyboardLayout`);
+- the neutral session actions (`idleMode`, `quit`) used by the idle panel and
+  the battery popups;
 - the neutral persistence methods (`persistKeybinds`, `persistStartup`,
   `applyMonitors`, `resetMonitors`, `reload`);
 - `displayPoller`, the backend-owned monitor reader.
