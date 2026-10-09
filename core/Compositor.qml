@@ -33,7 +33,11 @@ QtObject {
     id: root
 
     readonly property string desktop: (Quickshell.env("XDG_CURRENT_DESKTOP") || "").toLowerCase()
+    // niri sets XDG_CURRENT_DESKTOP=niri and NIRI_SOCKET for the processes it
+    // spawns. Accept either signal so the backend is correct even under a
+    // session manager that does not export XDG_CURRENT_DESKTOP.
     readonly property bool isNiri: root.desktop.indexOf("niri") !== -1
+        || (Quickshell.env("NIRI_SOCKET") || "") !== ""
 
     // Both instances exist; only the selected one is read. QtObject instances
     // are cheap and this avoids a Loader's async gap in a singleton.
