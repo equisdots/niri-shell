@@ -33,6 +33,7 @@ Source (this repo) | Target (shell tree) | Kind | Notes
 `ui/bar/popups/battery/BatteryPopup.qml` | `ui/bar/popups/battery/BatteryPopup.qml` | modified | Logout button calls `Compositor.quit()` instead of `exit.sh`; keeps the reveal-on-hover UX, the exit animation and the widget-state close.
 `ui/bar/popups/battery/BatteryPopupAlt.qml` | `ui/bar/popups/battery/BatteryPopupAlt.qml` | modified | Same logout routing through `Compositor.quit()`, same preserved UX.
 `ui/bar/Colors.qml` | `ui/bar/Colors.qml` | modified | `borderHex("active")` derives from the palette's muted `color8` instead of the loud accent, so the niri border is a neutral grey that stays harmonious across palettes (manual overrides and per-palette roles still win).
+`ScreenshotOverlay.qml` | `ScreenshotOverlay.qml` | modified | `executeCapture`/`performQrScan` call the capture backend from `EQUISDOTS_SCREENSHOT_SCRIPT` (exported by the niri launcher `niri_screenshot.sh`) instead of the hard-coded Hyprland `screenshot.sh`. The overlay UI (region selection, still/video toggle, microphone selection) is unchanged, so niri shows the same equisdots overlay as Hyprland.
 
 ### Neutral backend surface
 
@@ -157,7 +158,8 @@ restore:
    `ui/panels/idle/IdlePopup.qml`, `ui/bar/editor/IdlePage.qml`,
     `ui/bar/BarEditor.qml`,
     `ui/bar/popups/battery/BatteryPopup.qml`,
-    `ui/bar/popups/battery/BatteryPopupAlt.qml`, `ui/bar/Colors.qml`.
+    `ui/bar/popups/battery/BatteryPopupAlt.qml`, `ui/bar/Colors.qml`,
+    `ScreenshotOverlay.qml`.
 2. Remove the new files: `core/compositors/Niri.qml`, `core/Effects.qml`,
    `core/scripts/effects.sh`, `core/scripts/niri-workspaces.sh`,
    `ui/bar/editor/persist-appearance.sh`.
