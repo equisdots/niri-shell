@@ -11,3 +11,7 @@
 
 # Never commit secrets or machine-local state
 *.local
+
+# Python build artifacts
+__pycache__/
+*.pyc
