@@ -98,14 +98,32 @@ compositor-specific output moves to `~/.config/niri/`. See
   contract, and the hard UI rule for compact, content-fitting widgets.
 - [docs/overlay.md](docs/overlay.md) — file-by-file merge map and rollback.
 
+## Plugin standard parity
+
+This overlay is rebased on the current shared shell base (SDK `Settings`, MD3
+`core/Theme.qml` tokens, `PluginPopup`/`PluginPositionRow`, the Plugins panel
+and plugin catalog). `niri-meta` deploys `plugin-api`, `plugin-sdk`, the
+`plugins` hub and the default plugins, so the same bar modules, panels, popups,
+settings pages and standalone entries (including `wallpaper-motion`) run on
+niri. The compositor-specific plugin touch points are covered here:
+
+- `ui/panels/plugins/PluginsPanel.qml` and `ui/bar/editor/PluginsPage.qml`
+  reload through `Compositor.reload()` (KDL reload on niri).
+- `ui/plugins/screenshots/ui/ScreenshotOverlay.qml` honours
+  `EQUISDOTS_SCREENSHOT_SCRIPT`, exported by `niri_screenshot.sh`.
+- Plugin-provided keybind actions are reached through the static KDL binds in
+  the sibling `niri` repository; niri does not evaluate `hypr.lua` fragments at
+  runtime.
+
 ## Validation
 
-niri is not installed on the machine this overlay was authored on, so the niri
-paths are validated against the vendored `recursos/niri` and
-`recursos/hyprland-niri` references (niri 26.04) rather than a live session.
-Shell scripts pass `bash -n`; QML is checked for brace balance. Before shipping
-to a niri machine, assemble the config and run `niri validate`, then verify the
-bar, palette and monitor canvas live.
+niri is not installed on the authoring machine. The overlay is validated in a
+fake-`HOME` sandbox: the shared shell base plus this overlay are assembled,
+scripts pass `bash -n`, QML imports (`qs.*` and relative paths) are checked, the
+generated KDL is parsed/validated where possible, and the deploy/scan flow runs
+against local clones. Before shipping to a live niri machine, assemble the
+config, run `niri validate`, then verify the bar, palette, plugins and monitor
+canvas.
 
 ## License
 

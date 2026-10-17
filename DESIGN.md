@@ -4,8 +4,9 @@ This document records the design decisions behind the niri-shell overlay: the
 two backends, the compositor-neutral persistence contract, and the UI rule that
 governs every widget or panel that is ported or touched.
 
-Baseline for all niri facts: niri 26.04 (2026-04-25), as vendored in
-`recursos/niri` and `recursos/hyprland-niri`.
+Baseline for all niri facts: niri 26.04 (2026-04-25). The overlay is validated
+in a fake-`HOME` sandbox against the current shared shell base; the niri runtime
+checks (`niri validate`, live bar/plugin pass) run on a real session.
 
 ## 1. Two backends behind one seam
 
@@ -121,6 +122,11 @@ Properties of the contract:
   `_theme` Colors instance reads it), so popups restyle with the bar on both
   compositors. The shell owns the `org.freedesktop.notifications` name, so a
   rival notification daemon (`mako`, `dunst`) must not be started alongside it.
+- **Plugins**: the plugin standard is compositor-neutral on the Quickshell side
+  (catalog, host adapters, bar modules, panels, popups, settings pages,
+  standalone entries). niri does not evaluate `hypr.lua`, so plugin actions are
+  exposed through the static KDL binds in the sibling `niri` repo; enabling and
+  disabling a plugin reloads KDL through `Compositor.reload()` when needed.
 
 ## 4. Hard UI rule
 

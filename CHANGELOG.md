@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Parity with the merged Hyprland plugin stack: the overlay is rebased on the
+  current shell base (SDK `Settings`, MD3 `core/Theme.qml` tokens,
+  `PluginPopup`/`PluginPositionRow`, the Plugins panel and catalog). New overlay
+  files cover the plugin touch points: `ui/panels/plugins/PluginsPanel.qml` and
+  `ui/bar/editor/PluginsPage.qml` reload through the backend, and
+  `ui/plugins/screenshots/ui/ScreenshotOverlay.qml` honours
+  `EQUISDOTS_SCREENSHOT_SCRIPT` exported by `niri_screenshot.sh`.
+- `ui/bar/editor/GuidePage.qml`: the About page reports the niri stack repos,
+  the niri doctor and compositor-neutral labels.
+- `ui/bar/editor/sysinfo.sh`: niri/meta repo revisions and compositor-aware
+  version/monitor output.
+- `ui/bar/popups/updater/UpdaterPopup.qml`: the updater reads
+  `niri-meta/updates.json`, the niri version state and runs `dotsniri update`
+  instead of the Hyprland installer.
 - First release of the compositor-neutral Quickshell overlay: a niri backend
   (`core/compositors/Niri.qml`) plus the KDL writers under
   `~/.config/niri/generated/`, selected at runtime from the environment. The
@@ -30,12 +44,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Rebased every overlay file on the current shell base: the pre-SDK
+  `core/Config.qml` (and the stale MD3/pre-plugin variants of `BarEditor`,
+  `Colors`, `IdlePage`, `InputPage`, `appLauncher`, the battery popups,
+  `DavincixPicker`, `IdlePopup`, `ScalePicker` and `KeybindTab`) are gone; only
+  the compositor-specific deltas remain.
+- The screenshots overlay moved with its plugin: the overlay now targets
+  `ui/plugins/screenshots/ui/ScreenshotOverlay.qml` (the old root
+  `ScreenshotOverlay.qml` is no longer deployed by the shell).
 - Documented and split the border ownership: `ui/bar/Colors.qml` owns the
   border colour, `theme-effects.kdl` owns the border width, and
   `generated/borders.kdl` owns the colour block only (`8ae3d24`).
 
 ### Fixed
 
+- The niri writers now keep the single-occurrence sections unique: `effects.sh`
+  writes the global `blur {}` block to `generated/blur.kdl` (not inside
+  `theme-effects.kdl`), and `persist-appearance.sh input` emits a complete
+  `input {}` section (keyboard + pointer + focus-follows-mouse) because the
+  generated file is now its sole owner. This removes the duplicate-section
+  `niri validate` failure that appeared after using the Settings panel.
 - `core/Compositor.qml` no longer declares `Connections { }` as a child of the
   `QtObject` singleton. A `QtObject` has no default property, so the shell
   failed to load the whole config under niri with "Cannot assign to non-existent

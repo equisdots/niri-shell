@@ -60,24 +60,24 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: s(28)
-        color: window.base
-        border.color: window.surface2
+        radius: Theme.radiusLg
+        color: Theme.surfaceContainerLow
+        border.color: Theme.outlineVariant
         border.width: 1
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: s(20)
-            spacing: s(14)
+            anchors.margins: Theme.gapXl
+            spacing: Theme.gapMd
 
             // ── Header ──────────────────────────────────────────────────────
             RowLayout {
                 Layout.fillWidth: true
-                spacing: s(12)
+                spacing: Theme.gapMd
                 Item {
                     Layout.preferredWidth: s(40); Layout.preferredHeight: s(40)
                     Rectangle {
-                        anchors.fill: parent; radius: s(14)
+                        anchors.fill: parent; radius: Theme.radiusMd
                         color: window.mauve
                         Text {
                             anchors.centerIn: parent
@@ -87,7 +87,7 @@ Item {
                     }
                 }
                 ColumnLayout {
-                    Layout.fillWidth: true; spacing: s(2)
+                    Layout.fillWidth: true; spacing: Theme.gap2xs
                     Text {
                         text: "Idle & sleep"; font.family: "Inter"; font.weight: Font.Bold
                         font.pixelSize: s(15); color: window.text; Layout.fillWidth: true
@@ -98,7 +98,7 @@ Item {
                     }
                 }
                 Rectangle {
-                    Layout.preferredWidth: s(30); Layout.preferredHeight: s(30); radius: s(10)
+                    Layout.preferredWidth: s(30); Layout.preferredHeight: s(30); radius: Theme.radiusSm
                     color: (window.mode === "awake" ? window.green : window.mauve)
                     opacity: window.stateLoaded ? 1 : 0.4
                     Text {
@@ -120,24 +120,24 @@ Item {
             // ── Mode cards ──────────────────────────────────────────────────
             RowLayout {
                 Layout.fillWidth: true
-                spacing: s(12)
+                spacing: Theme.gapMd
 
                 Rectangle {
                     id: awakeCard
                     Layout.fillWidth: true
                     Layout.preferredHeight: s(150)
-                    radius: s(20)
-                    color: window.mode === "awake" ? Qt.alpha(window.green, 0.12) : window.surface0
-                    border.color: window.mode === "awake" ? window.green : window.surface2
+                    radius: Theme.radiusMd
+                    color: window.mode === "awake" ? Qt.alpha(window.green, 0.12) : Theme.surfaceContainer
+                    border.color: window.mode === "awake" ? window.green : Theme.outlineVariant
                     border.width: window.mode === "awake" ? s(2) : 1
                     Behavior on color { ColorAnimation { duration: 200 } }
                     Behavior on border.color { ColorAnimation { duration: 200 } }
 
                     ColumnLayout {
-                        anchors.fill: parent; anchors.margins: s(14)
-                        spacing: s(6)
+                        anchors.fill: parent; anchors.margins: Theme.gapMd
+                        spacing: Theme.gapXs
                         RowLayout {
-                            Layout.fillWidth: true; spacing: s(8)
+                            Layout.fillWidth: true; spacing: Theme.gapSm
                             Text {
                                 text: window.mode === "awake" ? "󰛓" : "󰂯"
                                 font.family: "Hack Nerd Font"; font.pixelSize: s(19)
@@ -173,18 +173,18 @@ Item {
                     id: autoCard
                     Layout.fillWidth: true
                     Layout.preferredHeight: s(150)
-                    radius: s(20)
-                    color: window.mode === "normal" ? Qt.alpha(window.mauve, 0.12) : window.surface0
-                    border.color: window.mode === "normal" ? window.mauve : window.surface2
+                    radius: Theme.radiusMd
+                    color: window.mode === "normal" ? Qt.alpha(window.mauve, 0.12) : Theme.surfaceContainer
+                    border.color: window.mode === "normal" ? window.mauve : Theme.outlineVariant
                     border.width: window.mode === "normal" ? s(2) : 1
                     Behavior on color { ColorAnimation { duration: 200 } }
                     Behavior on border.color { ColorAnimation { duration: 200 } }
 
                     ColumnLayout {
-                        anchors.fill: parent; anchors.margins: s(14)
-                        spacing: s(6)
+                        anchors.fill: parent; anchors.margins: Theme.gapMd
+                        spacing: Theme.gapXs
                         RowLayout {
-                            Layout.fillWidth: true; spacing: s(8)
+                            Layout.fillWidth: true; spacing: Theme.gapSm
                             Text {
                                 text: window.mode === "normal" ? "󰅶" : "󰅶"
                                 font.family: "Hack Nerd Font"; font.pixelSize: s(19)
@@ -222,18 +222,18 @@ Item {
             // ── Manual actions ──────────────────────────────────────────────
             RowLayout {
                 Layout.fillWidth: true
-                spacing: s(10)
+                spacing: Theme.gapSm
 
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: s(42)
-                    radius: s(14)
-                    color: lockMa.containsMouse ? window.green : window.surface0
-                    border.color: lockMa.containsMouse ? window.green : window.surface2
+                    radius: Theme.radiusMd
+                    color: lockMa.containsMouse ? window.green : Theme.surfaceContainer
+                    border.color: lockMa.containsMouse ? window.green : Theme.outlineVariant
                     border.width: 1
                     Behavior on color { ColorAnimation { duration: 150 } }
                     RowLayout {
-                        anchors.centerIn: parent; spacing: s(8)
+                        anchors.centerIn: parent; spacing: Theme.gapSm
                         Text {
                             text: "󰌾"; font.family: "Hack Nerd Font"; font.pixelSize: s(15)
                             color: lockMa.containsMouse ? window.base : window.green
@@ -254,13 +254,13 @@ Item {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: s(42)
-                    radius: s(14)
-                    color: suspMa.containsMouse ? window.sapphire : window.surface0
-                    border.color: suspMa.containsMouse ? window.sapphire : window.surface2
+                    radius: Theme.radiusMd
+                    color: suspMa.containsMouse ? window.sapphire : Theme.surfaceContainer
+                    border.color: suspMa.containsMouse ? window.sapphire : Theme.outlineVariant
                     border.width: 1
                     Behavior on color { ColorAnimation { duration: 150 } }
                     RowLayout {
-                        anchors.centerIn: parent; spacing: s(8)
+                        anchors.centerIn: parent; spacing: Theme.gapSm
                         Text {
                             text: "󰤄"; font.family: "Hack Nerd Font"; font.pixelSize: s(15)
                             color: suspMa.containsMouse ? window.base : window.sapphire
@@ -281,7 +281,7 @@ Item {
 
             RowLayout {
                 Layout.fillWidth: true
-                spacing: s(8)
+                spacing: Theme.gapSm
                 Text {
                     Layout.alignment: Qt.AlignHCenter
                     Layout.fillWidth: true
