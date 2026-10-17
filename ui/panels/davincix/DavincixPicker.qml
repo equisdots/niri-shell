@@ -109,16 +109,19 @@ Item {
 
         stdout: StdioCollector {
             onStreamFinished: {
-                if (!this.text || this.text.trim().length === 0) return;
-                try {
-                    // Neutral monitor list from the active backend (Hyprland
-                    // hyprctl / niri niri msg outputs); no hyprctl here.
-                    var monitors = Compositor.monitorsFromOutput(this.text);
-                    monitorModel.clear();
-                    for (var i = 0; i < monitors.length; i++) {
-                        monitorModel.append({ "name": monitors[i].name, "selected": true });
-                    }
-                } catch (e) {}
+                let response = this.text;
+
+                if (response && response.trim().length > 0) {
+                    try {
+                        // Neutral monitor list from the active backend (Hyprland
+                        // hyprctl / niri niri msg outputs); no hyprctl here.
+                        var monitors = Compositor.monitorsFromOutput(response);
+                        monitorModel.clear();
+                        for (var i = 0; i < monitors.length; i++) {
+                            monitorModel.append({ "name": monitors[i].name, "selected": true });
+                        }
+                    } catch (e) {}
+                }
             }
         }
     }
@@ -577,7 +580,7 @@ Item {
     property string transition: "random"
     // Thumbnail corners: rounded vs square.
     property bool roundedThumbs: true
-    property int thumbRadius: roundedThumbs ? window.s(12) : 0
+    property int thumbRadius: roundedThumbs ? Theme.radiusMd : 0
 
     // ── View modes (persisted via Config → settings.json, key "davincixView")
     property string gridOrientation: "horizontal"

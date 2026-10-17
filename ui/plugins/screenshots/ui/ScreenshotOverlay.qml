@@ -1,3 +1,9 @@
+// ScreenshotOverlay — the screenshots plugin's area-selection / recording UI.
+//
+// Ships in the plugin repo (equisdots/plugins → plugins/screenshots) and is
+// deployed with the plugin UI to <quickshell>/ui/plugins/screenshots/ui/ —
+// the relative imports below reach the shell's bar kit and core singletons
+// from that deployed path.
 import QtQuick
 import QtQuick.Window
 import QtQuick.Controls
@@ -5,8 +11,8 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Io
-import "./ui/bar"
-import "./core"
+import "../../../bar"
+import "../../../../core"
 
 PanelWindow {
     id: root
@@ -38,12 +44,17 @@ PanelWindow {
     property string cachedMode: Quickshell.env("QS_CACHED_MODE") || "false"
     property bool isVideoMode: cachedMode === "true"
 
-    // Capture backend. This overlay is shared; the niri launcher
-    // (niri_screenshot.sh) exports EQUISDOTS_SCREENSHOT_SCRIPT so the same UI
-    // drives the niri script. Under Hyprland the variable is unset and the
-    // shared screenshot.sh is used, keeping behaviour unchanged.
-    readonly property string captureScript: Quickshell.env("EQUISDOTS_SCREENSHOT_SCRIPT")
-        || (Quickshell.env("HOME") + "/.config/hypr/scripts/screenshot.sh")
+    // screenshot.sh resolver: the plugin's script across deploy layouts
+    // (managed registry copy, managed UI tree copy, user plugin) with the
+    // pre-cutover core path as the last resort. Used by the geometry flows
+    // below (scan-qr / apply selection), which run after the overlay opened.
+    // Capture backend. The niri launcher (niri_screenshot.sh) exports
+    // EQUISDOTS_SCREENSHOT_SCRIPT so the same overlay drives the niri capture
+    // script; elsewhere the plugin's own resolver is used (Hyprland unchanged).
+    readonly property string envScript: String(Quickshell.env("EQUISDOTS_SCREENSHOT_SCRIPT") || "")
+    readonly property string scriptCmd: root.envScript !== ""
+        ? ("bash " + JSON.stringify(root.envScript))
+        : "S=; for c in \"$HOME/.config/hypr/plugins/screenshots/scripts/screenshot.sh\" \"$HOME/.config/hypr/scripts/quickshell/ui/plugins/screenshots/scripts/screenshot.sh\" \"$HOME/.config/hypr/plugins-user/screenshots/scripts/screenshot.sh\" \"$HOME/.config/hypr/scripts/screenshot.sh\"; do [ -f \"$c\" ] && { S=\"$c\"; break; }; done; [ -n \"$S\" ] && exec bash \"$S\""
 
     onIsVideoModeChanged: {
         Quickshell.execDetached(["bash", "-c", "echo '" + (root.isVideoMode ? "true" : "false") + "' > " + paths.getCacheDir("screenshot") + "/video_mode"]);
@@ -974,7 +985,7 @@ PanelWindow {
     function performQrScan() {
         Quickshell.execDetached(["bash", "-c", "rm -f " + paths.getRunDir("screenshot") + "/qr_result"])
         root.isScanningQr = true; root.showQrPopup = false; qrModel.clear()
-        let cmd = `bash "${root.captureScript}" --geometry "${root.geometryString}" --scan-qr`
+        let cmd = scriptCmd + ` --geometry "${root.geometryString}" --scan-qr`
         Quickshell.execDetached(["bash", "-c", cmd])
         qrWaitTimer.start()
     }   
@@ -991,7 +1002,7 @@ PanelWindow {
     }
     
     function executeCapture(openEditor, isRecord) {
-        let cmd = `bash "${root.captureScript}" --geometry "${root.geometryString}"`
+        let cmd = scriptCmd + ` --geometry "${root.geometryString}"`
         if (isRecord) {
             cmd += " --record"
             cmd += ` --desk-vol ${root.deskVol} --desk-mute ${root.deskMute}`

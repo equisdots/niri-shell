@@ -4,6 +4,7 @@ import QtQuick.Effects
 import QtQuick.Layouts
 import QtQuick.Controls
 import Quickshell
+import Quickshell.Io
 import "../../../core"
 import "../../../core/Personalization.js" as Personalization
 import "../../bar"
@@ -150,18 +151,18 @@ Item {
         property real headerHeight: window.s(65)
         property real separatorHeight: 1
         property real itemHeight: window.s(60)
-        property real listSpacing: window.s(4)
+        property real listSpacing: Theme.gapXs
         property real listHeight: (scaleModel.count * itemHeight) + ((scaleModel.count - 1) * listSpacing)
-        property real margins: scaleModel.count > 0 ? window.s(20) : 0
+        property real margins: scaleModel.count > 0 ? Theme.gapXl : 0
 
         height: headerHeight + separatorHeight + margins + listHeight
 
         anchors.top: parent.top
         anchors.horizontalCenter: parent.horizontalCenter
 
-        radius: window.s(21)
-        color: Qt.rgba(window.base.r, window.base.g, window.base.b, window.base.a)
-        border.color: window.surface1
+        radius: Theme.radiusLg
+        color: Theme.surfaceContainerLow
+        border.color: Theme.outlineVariant
         border.width: 1
         clip: true
 
@@ -180,10 +181,10 @@ Item {
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: window.s(15)
-                    anchors.leftMargin: window.s(20)
-                    anchors.rightMargin: window.s(20)
-                    spacing: window.s(15)
+                    anchors.margins: Theme.gapLg
+                    anchors.leftMargin: Theme.gapXl
+                    anchors.rightMargin: Theme.gapXl
+                    spacing: Theme.gapLg
 
                     Text {
                         text: "󰍹"
@@ -215,7 +216,7 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: mainBg.separatorHeight
-                color: Qt.rgba(window.surface1.r, window.surface1.g, window.surface1.b, 0.5)
+                color: Theme.outlineVariant
             }
 
             // --- SCALE LIST ---
@@ -225,8 +226,8 @@ Item {
                 Layout.preferredHeight: mainBg.listHeight
                 Layout.topMargin: mainBg.margins / 2
                 Layout.bottomMargin: mainBg.margins / 2
-                Layout.leftMargin: window.s(10)
-                Layout.rightMargin: window.s(10)
+                Layout.leftMargin: Theme.gapSm
+                Layout.rightMargin: Theme.gapSm
 
                 model: scaleModel
                 spacing: mainBg.listSpacing
@@ -240,7 +241,7 @@ Item {
                     Rectangle {
                         x: 0
                         width: scaleList.width
-                        radius: window.s(10)
+                        radius: Theme.radiusMd
                         color: window.mauve
 
                         property int prevIdx: 0
@@ -288,30 +289,30 @@ Item {
 
                     Rectangle {
                         anchors.fill: parent
-                        radius: window.s(10)
+                        radius: Theme.radiusMd
                         color: "transparent"
 
                         Rectangle {
                             anchors.fill: parent
-                            radius: window.s(10)
-                            color: window.surface0
+                            radius: Theme.radiusMd
+                            color: Theme.surfaceContainer
                             opacity: ma.containsMouse && index !== scaleList.currentIndex ? 0.4 : 0
                             Behavior on opacity { NumberAnimation { duration: 250; easing.type: Easing.OutSine } }
                         }
 
                         RowLayout {
                             anchors.fill: parent
-                            anchors.margins: window.s(10)
-                            anchors.leftMargin: window.s(12)
-                            spacing: window.s(15)
+                            anchors.margins: Theme.gapSm
+                            anchors.leftMargin: Theme.gapMd
+                            spacing: Theme.gapLg
 
                             // --- TINTED PERCENTAGE MATTE BOX ---
                             Rectangle {
                                 Layout.preferredWidth: window.s(40)
                                 Layout.preferredHeight: window.s(40)
-                                radius: window.s(16)
+                                radius: Theme.radiusMd
 
-                                color: index === scaleList.currentIndex ? window.crust : window.surface0
+                                color: index === scaleList.currentIndex ? window.crust : Theme.surfaceContainer
                                 border.width: 0
                                 clip: true
 
@@ -358,7 +359,7 @@ Item {
                                 visible: model.isCurrent
                                 Layout.preferredWidth: window.s(58)
                                 Layout.preferredHeight: window.s(22)
-                                radius: window.s(11)
+                                radius: height / 2
                                 color: index === scaleList.currentIndex
                                     ? Qt.alpha(window.crust, 0.18)
                                     : Qt.alpha(window.green, 0.15)

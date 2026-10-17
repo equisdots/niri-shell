@@ -4,22 +4,21 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
 import "../edit"
+import "../../../core"
 
 // ═══════════════════════════════════════════════════════════════════════════
-// InputPage — BarEditor tab (System group): pointer + touchpad.
+// InputPage — BarEditor tab (grupo System): pointer + touchpad.
 //
-// The panel regenerates the input overrides (Hyprland: config/user-input.lua,
-// loaded at the end of hyprland.lua so it always wins; niri:
-// generated/user-input.kdl) and reloads. It does NOT touch
-// kb_layout/kb_options/follow_mouse: they stay in settings.lua (the partial
-// merge of hl.config preserves them, same as config/gaps.lua over `general`).
+// El panel regenera config/user-input.lua (cargado al final de hyprland.lua →
+// siempre gana) y recarga. NO toca kb_layout/kb_options/follow_mouse: se
+// quedan en settings.lua (el merge parcial de hl.config los conserva, igual
+// que config/gaps.lua sobre `general`).
 //
-// Seed: if settings.json has no "input" key, opening the page reads the live
-// values and fills the UI WITHOUT persisting; the user's first change writes.
-// The hyprctl seed runs on Hyprland only; niri has no `hyprctl getoption`, so
-// the page keeps the existing defaults / settings.json values there.
-// Debounced save in BarEditor: applyInput → persist-hypr.sh input, 600 ms.
-// Gate: the body is created once `bar` is injected.
+// Semilla: si settings.json no tiene key "input", al abrir la página se leen
+// los valores vivos con `hyprctl getoption` (Process) y se rellena la UI SIN
+// persistir; el primer cambio del usuario es el que escribe.
+// Guardado debounced en BarEditor: applyInput → persist-hypr.sh input, 600 ms.
+// Gate: el cuerpo se crea cuando `bar` ya está inyectado.
 // ═══════════════════════════════════════════════════════════════════════════
 
 Item {
@@ -31,8 +30,10 @@ Item {
     property bool _seedRequested: false
 
     // Compositor gate: `hyprctl getoption` exists on Hyprland only, so the
-    // seed Process must never run under niri.
-    readonly property bool isHyprland: (Quickshell.env("XDG_CURRENT_DESKTOP") || "").toLowerCase().indexOf("niri") === -1
+    // seed Process must never run under niri (either detection signal).
+    readonly property bool isNiri: (Quickshell.env("XDG_CURRENT_DESKTOP") || "").toLowerCase().indexOf("niri") !== -1
+        || (Quickshell.env("NIRI_SOCKET") || "") !== ""
+    readonly property bool isHyprland: !root.isNiri
 
     readonly property var flickable: body.item ? body.item.flickable : null
 
@@ -104,7 +105,7 @@ Item {
                 anchors.fill: parent
                 clip: true
                 boundsBehavior: Flickable.StopAtBounds
-                contentHeight: pageCol.height + bar.s(16)
+                contentHeight: pageCol.height + bar.s(Theme.gapLg)
                 ScrollBar.vertical: ScrollBar {
                     id: vScroll
                     width: bar.s(4)
@@ -112,8 +113,8 @@ Item {
                     hoverEnabled: true
                     active: pageFlick.moving || vScroll.hovered
                     contentItem: Rectangle {
-                        radius: bar.s(2)
-                        color: bar.colors.surface2
+                        radius: bar.s(Theme.radiusXs)
+                        color: Theme.surfaceContainerHighest
                         opacity: vScroll.active ? 1.0 : 0.45
                     }
                     background: Item {}
@@ -121,10 +122,10 @@ Item {
 
                 Column {
                     id: pageCol
-                    x: bar.s(8)
-                    y: bar.s(8)
-                    width: pageFlick.width - bar.s(16)
-                    spacing: bar.s(12)
+                    x: bar.s(Theme.gapSm)
+                    y: bar.s(Theme.gapSm)
+                    width: pageFlick.width - bar.s(Theme.gapLg)
+                    spacing: bar.s(Theme.gapLg)
 
                     // Título de página (GP:1007-1014)
                     Text {
@@ -163,8 +164,8 @@ Item {
                     GridLayout {
                         width: parent.width
                         columns: 2
-                        columnSpacing: bar.s(10)
-                        rowSpacing: bar.s(10)
+                        columnSpacing: bar.s(Theme.gapMd)
+                        rowSpacing: bar.s(Theme.gapMd)
                         OptionCard {
                             Layout.fillWidth: true
                             bar: root.bar

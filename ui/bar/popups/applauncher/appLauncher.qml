@@ -47,6 +47,11 @@ Item {
     property real targetMasterX: geo.x
     property real targetMasterY: geo.y
 
+    // Screen edge the launcher is anchored to, read by ui/Main.qml and
+    // forwarded to core/FrameBus.qml so the screen frame carves its notch
+    // where the launcher meets the border. Centered = no notch.
+    readonly property string frameEdge: (lcfg.position === "center") ? "" : lcfg.position
+
     // Outer radius for the host-drawn panel shadow (launcher bg radius).
     readonly property real shadowRadius: s(lcfg.radius)
 
@@ -196,7 +201,7 @@ Item {
     function launchApp(execStr) {
         Quickshell.execDetached(["bash", "-c", "mkdir -p ~/.cache/quickshell && USAGE=\"$HOME/.cache/quickshell/applauncher_usage.json\"; [ ! -f \"$USAGE\" ] && echo '{}' > \"$USAGE\"; KEY=$(printf '%s' \"$1\" | base64 -w0); COUNT=$(jq -r \".[\\\"$KEY\\\"].count // 0\" \"$USAGE\"); LAST=$(date +%s); jq \".[\\\"$KEY\\\"] = {\\\"count\\\": ($COUNT + 1), \\\"last_used\\\": $LAST}\" \"$USAGE\" > \"$USAGE.tmp\" && mv \"$USAGE.tmp\" \"$USAGE\"", "bash", execStr]);
         // Compositor-neutral spawn: no `hyprctl eval`; the backend runs the
-        // command directly with Quickshell.execDetached.
+        // command directly (both compositors use Quickshell.execDetached).
         Compositor.execApp(execStr);
         Quickshell.execDetached(["bash", Quickshell.env("HOME") + "/.config/hypr/scripts/qs_manager.sh", "close"]);
     }
@@ -245,9 +250,9 @@ Item {
         property real searchHeight: window.s(65)
         property real separatorHeight: 1
         property real itemHeight: window.s(window.lcfg.rowHeight)
-        property real listSpacing: window.s(4)
+        property real listSpacing: window.s(Theme.gapXs)
 
-        property real targetMargins: appModel.count > 0 ? window.s(20) : 0
+        property real targetMargins: appModel.count > 0 ? window.s(Theme.gapLg) : 0
 
         // Morphing interno de los márgenes de la lista (filas).
         property real animatedMargins: targetMargins
@@ -257,8 +262,8 @@ Item {
 
         // Bordes configurables (radius/borderWidth/borderColor de la paleta).
         radius: window.s(window.lcfg.radius)
-        color: Qt.rgba(window.base.r, window.base.g, window.base.b, window.base.a)
-        border.color: window[window.lcfg.borderColor] !== undefined ? window[window.lcfg.borderColor] : window.surface1
+        color: Theme.surfaceContainerLow
+        border.color: window[window.lcfg.borderColor] !== undefined ? window[window.lcfg.borderColor] : Theme.outlineVariant
         border.width: window.s(window.lcfg.borderWidth)
         clip: true
 
@@ -288,10 +293,10 @@ Item {
 
             RowLayout {
                 anchors.fill: parent
-                anchors.margins: window.s(15)
-                anchors.leftMargin: window.s(20)
-                anchors.rightMargin: window.s(20)
-                spacing: window.s(15)
+                anchors.margins: window.s(Theme.gapLg)
+                anchors.leftMargin: window.s(Theme.gapLg)
+                anchors.rightMargin: window.s(Theme.gapLg)
+                spacing: window.s(Theme.gapLg)
 
                 Text {
                     text: ""
@@ -357,7 +362,7 @@ Item {
             width: parent.width
             height: mainBg.separatorHeight
             y: window.geo.searchAtBottom ? searchBox.y - height : searchBox.y + searchBox.height
-            color: Qt.rgba(window.surface1.r, window.surface1.g, window.surface1.b, 0.5)
+            color: Qt.rgba(Theme.outlineVariant.r, Theme.outlineVariant.g, Theme.outlineVariant.b, 0.5)
         }
 
         // --- APPLICATION LIST ---
@@ -440,7 +445,7 @@ Item {
                     id: activeHighlight
                     x: 0
                     width: appList.width
-                    radius: window.s(10)
+                    radius: window.s(Theme.radiusMd)
                     color: window.mauve
 
                     property int prevIdx: 0
@@ -495,24 +500,24 @@ Item {
 
                 Rectangle {
                     anchors.fill: parent
-                    radius: window.s(10)
+                    radius: window.s(Theme.radiusMd)
                     color: "transparent"
 
                     Rectangle {
                         anchors.fill: parent
-                        radius: window.s(10)
-                        color: window.surface0
-                        opacity: ma.containsMouse && index !== appList.currentIndex ? 0.4 : 0
+                        radius: window.s(Theme.radiusMd)
+                        color: Theme.stateLayer(window.mauve, Theme.stateHover)
+                        opacity: ma.containsMouse && index !== appList.currentIndex ? 1 : 0
                         Behavior on opacity { NumberAnimation { duration: 250; easing.type: Easing.OutSine } }
                     }
 
                     Item {
                         id: rowWrap
                         anchors.fill: parent
-                        anchors.topMargin: window.s(10)
-                        anchors.bottomMargin: window.s(10)
-                        anchors.leftMargin: window.s(12)
-                        anchors.rightMargin: window.s(10)
+                        anchors.topMargin: window.s(Theme.gapSm)
+                        anchors.bottomMargin: window.s(Theme.gapSm)
+                        anchors.leftMargin: window.s(Theme.gapMd)
+                        anchors.rightMargin: window.s(Theme.gapSm)
 
                         Row {
                             id: rowContent
@@ -521,7 +526,7 @@ Item {
                             x: window.lcfg.align === "center" ? Math.max(0, (parent.width - width) / 2)
                              : (window.lcfg.align === "right" ? Math.max(0, parent.width - width) : 0)
                             // Sin iconos no debe quedar hueco a la izquierda.
-                            spacing: window.lcfg.showIcons ? window.s(15) : 0
+                            spacing: window.lcfg.showIcons ? window.s(Theme.gapLg) : 0
 
                             // --- TINTED ICON MATTE BOX (opcional: Show icons) ---
                             Rectangle {
@@ -534,7 +539,7 @@ Item {
                                 height: width
                                 radius: iconSize * 0.4
 
-                                color: index === appList.currentIndex ? window.crust : window.surface0
+                                color: index === appList.currentIndex ? window.crust : Theme.surfaceContainer
                                 border.width: 0 
                                 clip: true
 

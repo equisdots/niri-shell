@@ -20,7 +20,7 @@ import "edit"
 //   · "Bar / Bar" → las 7 páginas del editor bar/editor/*.qml (bar = root),
 //                  expandible, subtabs indentados con línea de rail.
 // Los Loaders son lazy (ensurePage/setSource con initial properties) y las
-// páginas del editor exponen flickable + zonasCol/classicListsCol para el DnD
+// páginas del editor exponen flickable + zonasCol para el DnD
 // (chips en coordenadas del root vía mapToItem(bar,...)). Edits en vivo a
 // settings.json; la barra viva no se toca.
 // ═══════════════════════════════════════════════════════════════════════════
@@ -107,14 +107,24 @@ Item {
     function applyActiveMode() {
         if (root.activeMode === "") return;
         let map = {
-            "general": "s_general", "timex": "s_timex", "keyboard": "s_keyboard",
-            "monitors": "s_monitors", "startup": "s_startup", "topbar": "d_engine",
-            "bar": "d_engine", "engine": "d_engine", "launcher": "d_launcher",
+            "general": "s_general", "keyboard": "s_keyboard",
+            "monitors": "s_monitors", "startup": "s_startup", "topbar": "d_general",
+            "bar": "d_general", "engine": "d_general", "launcher": "d_launcher",
             "hyprland": "d_hyprland", "idle": "d_idle", "gpu": "d_gpu",
             "notifications": "d_notifications", "guide": "d_guide", "about": "d_guide",
-            "shadows": "d_shadows", "glass": "d_glass", "palette": "d_palette", "mascots": "d_mascots"
+            "shadows": "d_shadows", "glass": "d_glass", "palette": "d_palette",
+            "plugins": "d_plugins"
         };
         let page = map[root.activeMode] !== undefined ? map[root.activeMode] : root.activeMode;
+        if (root.navIndex(page) === -1) {
+            // Installed plugins are addressed by id: "<id>" -> "p_<id>".
+            let pid = String(root.activeMode);
+            let plist = PluginsCatalog.plugins || [];
+            for (let i = 0; i < plist.length; i++) {
+                let p = plist[i] || {};
+                if (p.id === pid && p.settings && p.settings.page) { page = "p_" + pid; break; }
+            }
+        }
         if (root.navIndex(page) === -1) return;
         // Timer (220 ms, como el popup): la ventana acaba de abrirse y la
         // intro anima; el layout debe estar resuelto antes de navegar.
@@ -127,18 +137,8 @@ Item {
         onTriggered: if (root.activeModePage !== "") root.gotoPage(root.activeModePage);
     }
 
-    // ════ DUAL ENGINE STATE (Phase D4-E2) ════
-    // The editor edits whichever engine settings.json says is live ("bar" or
-    // "classic"); root.classic mirrors the "classicbar" key, bar config untouched.
-    property string engine: "bar"
-    property var classic: BarLayout.classicbarDefaults()
-    property bool _classicDirty: false
-
     Timer { id: saveTimer; interval: 220; onTriggered: flushSave() }
     function markDirty() { _dirty = true; saveTimer.restart(); }
-    // Classic edits share the same debounce; both keys are independent top-level
-    // settings keys, so the queues never clobber each other.
-    function markDirtyClassic() { _classicDirty = true; saveTimer.restart(); }
     // Un único updateJsonBulk (un jq + un mv) en vez de dos setSetting
     // separados: dos procesos jq concurrentes sobre el mismo archivo se pisan
     // (read-modify-write) y podían perder la clave recién escrita.
@@ -147,7 +147,6 @@ Item {
     function flushSave() {
         let patch = {};
         if (_dirty && root._barReady) { _dirty = false; patch.bar = root.bar; }
-        if (_classicDirty && root._barReady) { _classicDirty = false; patch.classicbar = root.classic; }
         if (Object.keys(patch).length > 0) Config.updateJsonBulk(patch);
     }
     function applyBar(bar) { root.bar = bar; root.markDirty(); }
@@ -159,8 +158,6 @@ Item {
     function reload() {
         if (!Config.dataReady) return;
         root.bar = BarLayout.getBar(Config.rawSettings);
-        root.engine = Config.rawSettings.barEngine === "classic" ? "classic" : "bar";
-        root.classic = BarLayout.getClassicbar(Config.rawSettings);
         root._barReady = true;
     }
     Connections {
@@ -174,76 +171,6 @@ Item {
                 root.uiScale = Config.uiScale;
             }
         }
-    }
-
-    // ════ ENGINE SWITCHING + CLASSIC EDITS (Phase D4-E2) ════
-    // Hot engine switch via the top-level "barEngine" key (the live host swaps
-    // in-process). The FIRST switch to "classic" seeds "classicbar" from the bar's
-    // position + ENABLED modules, so the classic bar starts with the layout.
-    function setEngine(v) {
-        if (v === "classic") {
-            let raw = Config.rawSettings;
-            let sb = raw.classicbar;
-            if (!sb || typeof sb !== "object") {
-                let init = BarLayout.classicbarDefaults();
-                init.position = root.bar.position;
-                init.modules = BarLayout.barToClassicModules(root.bar);
-                init = BarLayout.normalizeClassicbar(init);
-                Config.setSetting("classicbar", init);
-                root.classic = init;
-            } else {
-                root.classic = BarLayout.getClassicbar(raw);
-            }
-            Config.setSetting("barEngine", "classic");
-        } else {
-            Config.setSetting("barEngine", "bar");
-        }
-        root.engine = v === "classic" ? "classic" : "bar";
-        // Fase B: d_style/d_zones (bar) y d_classic (classic) dependen del engine;
-        // si la página activa desaparece del rail caemos a d_engine (grupo
-        // Bar/Bar). El grupo NO se colapsa al cambiar de engine.
-        if (root.navIndex(root.currentPage) === -1) root.currentPage = "d_engine";
-        root.cancelDnd();
-        Qt.callLater(root.syncNavPill);
-    }
-
-    // Full-config commit (already normalized): replace root.classic + queue save.
-    function commitClassic(cfg) {
-        root.classic = cfg;
-        root.markDirtyClassic();
-    }
-
-    // Shallow partial merge + normalize so the in-memory state always
-    // satisfies the host invariants before the debounced file write lands.
-    function applyClassic(partial) {
-        root.commitClassic(BarLayout.normalizeClassicbar(Object.assign({}, root.classic, partial)));
-    }
-
-    // Pure-engine op helper: commit only when the JSON really changed.
-    function commitClassicOp(next) {
-        if (next && JSON.stringify(next) !== JSON.stringify(root.classic)) root.commitClassic(next);
-    }
-
-    // Chips send modules back to the pool / break a cluster apart.
-    function classicRemoveModule(id) {
-        root.commitClassicOp(BarLayout.classicMoveTo(root.classic, id, "available", 0));
-    }
-    function classicUngroupAt(list, itemIndex) {
-        root.commitClassicOp(BarLayout.classicUngroup(root.classic, list, itemIndex));
-    }
-
-    // "Classic defaults": stock layout keeping the current position.
-    function classicDefaultsAction() {
-        let d = BarLayout.classicbarDefaults();
-        d.position = root.classic.position;
-        root.applyClassic(d);
-    }
-
-    // "Mirror bar layout": importa los módulos enabled del bar a classic.
-    // Compartida por ClassicBarPage (señal mirrorBar → Connections) y
-    // GeneralPage (llamada directa bar.mirrorBarAction()).
-    function mirrorBarAction() {
-        root.applyClassic({ modules: BarLayout.barToClassicModules(root.bar) });
     }
 
     // ════ LAUNCHER (applauncher, SUPER+D) ════
@@ -338,15 +265,6 @@ Item {
         }
     }
 
-    // Member count of the group currently being dragged (0 = module drag).
-    function classicGroupCount() {
-        if (root.dndModuleId !== "" || root.dndSourceClassicList === "" || root.dndSourceItemIndex < 0) return 0;
-        let list = root.classic.modules[root.dndSourceClassicList];
-        if (!list || root.dndSourceItemIndex >= list.length) return 0;
-        let item = list[root.dndSourceItemIndex];
-        return (typeof item === "object" && BarLayout.isList(item)) ? item.length : 0;
-    }
-
     // ════ BAR STYLE PRESETS (Phase D3) ════
     function applyStyle(preset) {
         root.applyBar(BarLayout.applyStylePreset(root.bar, preset));
@@ -354,14 +272,14 @@ Item {
 
     // ════ MODULE CHIP DRAG & DROP (Phase D3, adapted Phase 2) ════
     // One editor-wide session: a chip MouseArea crosses its threshold and
-    // calls startDnd()/startClassicDnd(); we own the gesture — ghost at pointer,
+    // calls startDnd(); we own the gesture — ghost at pointer,
     // dndActive + dndInsertIndex on the card under the cursor, auto-scroll of
-    // the ACTIVE page's flickable, commit with BarLayout.*MoveTo on release
-    // (drop outside every card = cancel). root.bar/root.classic stay untouched
+    // the ACTIVE page's flickable, commit with BarLayout.moduleMoveTo on
+    // release (drop outside every card = cancel). root.bar stays untouched
     // until the drop, so no-op drops never write settings.
     //
-    // Phase 2: cards now live in the pages' own Flickables (ZonesPage /
-    // ClassicBarPage). The chips' coordinate contract is unchanged — cards map
+    // Phase 2: cards now live in the ZonesPage Flickable. The chips'
+    // coordinate contract is unchanged — cards map
     // with mapToItem(bar,...)/mapFromItem(bar,...), points stay in root
     // coordinates and nested scrolls cancel out; only the auto-scroll target
     // becomes dynamic (dndFlick = the current page's flickable).
@@ -370,14 +288,8 @@ Item {
     property string dndSourceZoneId: ""
     property point dndPointer: Qt.point(-10000, -10000)
 
-    // Classic drags remember where the dragged item sits: module drags keep
-    // dndSourceItemIndex -1 (removal by id); GROUP drags use dndModuleId ""
-    // + the group's ITEM index inside dndSourceClassicList.
-    property string dndSourceClassicList: ""
-    property int dndSourceItemIndex: -1
-
     // Phase 2: page Flickable locked while a drag runs + auto-scrolled
-    // (ZonesPage/ClassicBarPage expose their flickables; engine picks the owner).
+    // (ZonesPage exposes its flickable).
     property var dndFlick: null
 
     // Phase 3: lazily-loaded page items (Loader.setSource initial props give
@@ -385,13 +297,12 @@ Item {
     // page has been opened once; DnD targets only exist while loaded, which is
     // exactly when their page is the visible one.
     property var zonesPage: null   // ZonesPage item (lazy; zone DnD targets)
-    property var classicPage: null    // ClassicBarPage item (lazy; classic DnD targets)
 
     // Zone cards: children of the Zones page's zonasCol (isZoneEditorCard
     // marker skips the Repeater). Hidden pages keep valid geometry, so the
     // currentPage guard excludes them.
     function zoneCards() {
-        if (root.engine !== "bar" || root.currentPage !== "d_zones") return [];
+        if (root.currentPage !== "d_zones") return [];
         let out = [];
         let kids = root.zonesPage ? root.zonesPage.zonasCol.children : [];
         for (let i = 0; i < kids.length; i++) {
@@ -401,22 +312,8 @@ Item {
         return out;
     }
 
-    // Live list of classic list cards (ClassicBar page's classicListsCol, marker
-    // isClassicEditorCard); same hidden-page + engine guard as zoneCards().
-    function classicCards() {
-        if (root.engine !== "classic" || root.currentPage !== "d_classic") return [];
-        let out = [];
-        let kids = root.classicPage ? root.classicPage.classicListsCol.children : [];
-        for (let i = 0; i < kids.length; i++) {
-            let c = kids[i];
-            if (c && c.isClassicEditorCard) out.push(c);
-        }
-        return out;
-    }
-
-    // Only one engine UI renders at a time: targets are always one card kind.
     function dndTargets() {
-        return root.engine === "bar" ? root.zoneCards() : root.classicCards();
+        return root.zoneCards();
     }
 
     function startDnd(zoneId, moduleId) {
@@ -424,29 +321,12 @@ Item {
         root.dndBusy = true;
         root.dndModuleId = moduleId;
         root.dndSourceZoneId = zoneId;
-        root.dndSourceClassicList = "";
-        root.dndSourceItemIndex = -1;
-        root.dndFlick = (root.engine === "bar" && root.zonesPage) ? root.zonesPage.flickable
-                    : (root.classicPage ? root.classicPage.flickable : null);
-        if (root.dndFlick) root.dndFlick.interactive = false;
-    }
-
-    // Classic chips enter the SAME editor-wide session: moduleId "" marks a
-    // whole-group drag located by dndSourceItemIndex inside listId.
-    function startClassicDnd(listId, moduleId, itemIndex) {
-        if (root.dndBusy) return;
-        root.dndBusy = true;
-        root.dndModuleId = moduleId || "";
-        root.dndSourceZoneId = "";
-        root.dndSourceClassicList = listId;
-        root.dndSourceItemIndex = (moduleId === "") ? (isFinite(itemIndex) ? itemIndex : -1) : -1;
-        root.dndFlick = (root.engine === "bar" && root.zonesPage) ? root.zonesPage.flickable
-                    : (root.classicPage ? root.classicPage.flickable : null);
+        root.dndFlick = root.zonesPage ? root.zonesPage.flickable : null;
         if (root.dndFlick) root.dndFlick.interactive = false;
     }
 
     // Pointer moved (root/editor coordinates): repaint ghost + drop feedback
-    // (dndActive / dndInsertIndex / classic group join slot under the cursor).
+    // (dndActive / dndInsertIndex on the card under the cursor).
     function updateDnd(px, py) {
         if (!root.dndBusy) return;
         root.dndPointer = Qt.point(px, py);
@@ -459,25 +339,17 @@ Item {
             let c = targets[i];
             if (c === target) {
                 if (!c.dndActive) c.dndActive = true;
-                if (c.isClassicEditorCard) {
-                    let j = c.groupJoinIndexAt(px, py);
-                    if (c.dndJoinIndex !== j) c.dndJoinIndex = j;
-                }
                 let idx = c.dropIndexAt(px, py);
                 if (c.dndInsertIndex !== idx) c.dndInsertIndex = idx;
             } else {
                 if (c.dndActive) { c.dndActive = false; c.dndInsertIndex = -1; }
-                if (c.isClassicEditorCard && c.dndJoinIndex !== -1) c.dndJoinIndex = -1;
             }
         }
     }
 
-    // Drop: commit only when released over a card. The TARGET KIND decides the
-    // engine: zone cards commit via BarLayout.moduleMoveTo + applyBar; classic
-    // cards branch by payload — module drags join the group under the pointer
-    // when offered, else insert as a loose item ("available" only detaches),
-    // whole-group drags relocate the cluster (or release on "available").
-    // Identical-result drops (JSON-equal) never write settings.
+    // Drop: commit only when released over a card. Zone cards commit via
+    // BarLayout.moduleMoveTo + applyBar; identical-result drops (JSON-equal)
+    // never write settings.
     function endDnd(px, py) {
         if (!root.dndBusy) return;
         let target = null;
@@ -487,42 +359,15 @@ Item {
         }
         let id = root.dndModuleId;
         let result = null;
-        if (target) {
-            if (target.isZoneEditorCard && id !== "") {
-                let idx = target.dropIndexAt(px, py);
-                if (idx >= 0) {
-                    result = BarLayout.moduleMoveTo(root.bar, id, target.cardZoneId, idx);
-                    if (JSON.stringify(result) === JSON.stringify(root.bar)) result = null;
-                }
-            } else if (target.isClassicEditorCard) {
-                if (id !== "") {
-                    if (target.dndTargetId === "available") {
-                        result = BarLayout.classicMoveTo(root.classic, id, "available", 0);
-                    } else {
-                        let joinIdx = target.groupJoinIndexAt(px, py);
-                        if (joinIdx >= 0) {
-                            result = BarLayout.classicJoinGroup(root.classic, id, target.dndTargetId, joinIdx);
-                        } else {
-                            let idx = target.dropIndexAt(px, py);
-                            if (idx >= 0) result = BarLayout.classicMoveTo(root.classic, id, target.dndTargetId, idx);
-                        }
-                    }
-                    if (result && JSON.stringify(result) === JSON.stringify(root.classic)) result = null;
-                } else {
-                    // whole-group drag: move (or release) the cluster
-                    let idx = target.dropIndexAt(px, py);
-                    if (idx >= 0) {
-                        result = BarLayout.classicMoveGroupTo(root.classic, root.dndSourceClassicList, root.dndSourceItemIndex, target.dndTargetId, idx);
-                        if (JSON.stringify(result) === JSON.stringify(root.classic)) result = null;
-                    }
-                }
+        if (target && id !== "") {
+            let idx = target.dropIndexAt(px, py);
+            if (idx >= 0) {
+                result = BarLayout.moduleMoveTo(root.bar, id, target.cardZoneId, idx);
+                if (JSON.stringify(result) === JSON.stringify(root.bar)) result = null;
             }
         }
         root.clearDnd();
-        if (result) {
-            if (target && target.isZoneEditorCard) root.applyBar(result);
-            else root.commitClassic(result);
-        }
+        if (result) root.applyBar(result);
     }
 
     // Release anywhere (or session abort): restore interactive scrolling.
@@ -533,13 +378,10 @@ Item {
             let c = cards[i];
             c.dndActive = false;
             c.dndInsertIndex = -1;
-            if (c.isClassicEditorCard && c.dndJoinIndex !== -1) c.dndJoinIndex = -1;
         }
         root.dndBusy = false;
         root.dndModuleId = "";
         root.dndSourceZoneId = "";
-        root.dndSourceClassicList = "";
-        root.dndSourceItemIndex = -1;
         root.dndPointer = Qt.point(-10000, -10000);
         if (root.dndFlick) root.dndFlick.interactive = true;
         root.dndFlick = null;
@@ -567,12 +409,16 @@ Item {
 
     // ════ FASE B: RAIL CON GRUPOS ════
     // Grupos colapsables definidos en core/EditorNav.js (Shell, Bar, Theme,
-    // Behavior, System): orden, visibilidad y estado vienen de settings.editor.
+    // Plugins, Behavior, Widgets, System): orden, visibilidad y estado vienen
+    // de settings.editor. Los plugins instalados aportan su ítem (p_<id>).
     // currentPage usa ids prefijados:
-    // s_* = settings/tabs/*.qml + ui/timex (host = settingsHost) · d_* = bar/editor/*.qml
-    // (bar = root). La píldora mauve sigue al item activo por su POSICIÓN REAL
+    // s_* = settings/tabs/*.qml (host = settingsHost) · d_* = bar/editor/*.qml
+    // p_* = plugin pages (ui/plugins/<id>/, loaded on demand; bar = root).
+    // La píldora mauve sigue al item activo por su POSICIÓN REAL
     // (navItemMap + mapToItem) con scroll-follow por contentY.
     property string currentPage: "s_general"
+    // Last plugin page loaded by dynamicPageLoader (p_<id>; see ensurePage).
+    property string _dynamicPageId: ""
 
     // Panel width: doubled (2 x 1120) with a screen margin cap so it always
     // fits; Main follows this target live and animates the morph.
@@ -580,9 +426,11 @@ Item {
     property real targetMasterHeight: root.s(760)
     // Outer radius for the host-drawn panel shadow (matches the panel bg).
     readonly property real shadowRadius: root.s(21)
-    // Grupos de navegación: definidos en core/EditorNav.js (5 grupos
+    // Grupos de navegación: definidos en core/EditorNav.js (7 grupos
     // colapsables, orden/visibilidad/estado desde settings.editor).
-    property var navGroups: EditorNav.configure(EditorNav.groups(), Config.rawSettings.editor)
+    property var navGroups: EditorNav.configure(
+        EditorNav.withPlugins(EditorNav.groups(), PluginsCatalog.plugins),
+        Config.rawSettings.editor)
     // Colapsar/desplegar un grupo: persiste en settings.editor.collapsed.
     function toggleGroup(id) {
         let cfg = (Config.rawSettings.editor && typeof Config.rawSettings.editor === "object")
@@ -598,7 +446,8 @@ Item {
         // Config.setSetting muta rawSettings SIN reasignar la propiedad (los
         // bindings que leen Config.rawSettings no re-evaluan): refrescamos el
         // modelo de navegacion de forma imperativa para plegar/desplegar ya.
-        root.navGroups = EditorNav.configure(EditorNav.groups(), next);
+        root.navGroups = EditorNav.configure(
+            EditorNav.withPlugins(EditorNav.groups(), PluginsCatalog.plugins), next);
         Qt.callLater(root.syncNavPill);
     }
     // Item del rail por id (lo registran los delegates): la píldora se coloca
@@ -608,14 +457,9 @@ Item {
     // updates through the y binding never lag.
     property real navPillTargetY: 0
 
-    // Items de un grupo visibles bajo el engine actual.
+    // Items visibles de un grupo (lo que el rail renderiza).
     function groupItems(group) {
-        let out = [];
-        for (let i = 0; i < group.items.length; i++) {
-            let it = group.items[i];
-            if (!it.engine || it.engine === root.engine) out.push(it);
-        }
-        return out;
+        return group.items;
     }
     // Lista plana (Desktop + Bar/Bar si expandido) para Tab/Shift+Tab.
     function navForEngine() {
@@ -662,19 +506,18 @@ Item {
     // never null during construction (kills the burst of TypeErrors the typed
     // always-instantiated children produced). Once loaded, the item persists;
     // hiding the page only toggles visible.
-    // DnD hooks: zones/classic items are mirrored into root.zonesPage/root.classicPage
-    // from their Loader's onLoaded (zoneCards()/classicCards() read the property;
-    // Connections below retarget automatically).
+    // DnD hooks: zone items are mirrored into root.zonesPage from the Loader's
+    // onLoaded (zoneCards() reads the property; Connections below retarget
+    // automatically).
     function pageFile(id) {
         let map = {
             // Tabs compartidas de settings (host = settingsHost)
             "s_general":  "../settings/tabs/GeneralTab.qml",
-            "s_timex":  "../timex/TimexTab.qml",
             "s_keyboard": "../settings/tabs/KeybindTab.qml",
             "s_monitors": "../settings/tabs/MonitorsTab.qml",
             "s_startup":  "../settings/tabs/StartupTab.qml",
             // Páginas del editor (bar = root)
-            "d_engine":     "editor/GeneralPage.qml",
+            "d_general":    "editor/GeneralPage.qml",
             "d_widgets":    "editor/WidgetsPage.qml",
             "d_position":   "editor/PositionPage.qml",
             "d_style":      "editor/BarStylePage.qml",
@@ -682,7 +525,6 @@ Item {
             "d_zones":      "editor/ZonesPage.qml",
             "d_modules":    "editor/ModulesPage.qml",
             "d_workspaces": "editor/WorkspacesPage.qml",
-            "d_classic":       "editor/ClassicBarPage.qml",
             "d_launcher":   "editor/LauncherPage.qml",
             "d_idle":          "editor/IdlePage.qml",
             "d_gpu":           "editor/GpuPage.qml",
@@ -692,19 +534,20 @@ Item {
             "d_animations":    "editor/AnimationsPage.qml",
             "d_input":         "editor/InputPage.qml",
             "d_shadows":       "editor/ShadowsPage.qml",
+            "d_frame":         "editor/FramePage.qml",
             "d_glass":         "editor/GlassPage.qml",
-            "d_mascots":       "editor/MascotsPage.qml"
+            "d_plugins":       "editor/PluginsPage.qml",
+            "d_appearance":    "editor/AppearancePage.qml"
         };
         return map[id] || "";
     }
     function pageLoader(id) {
         let map = {
             "s_general":  sGeneralLoader,
-            "s_timex":  sTimexLoader,
             "s_keyboard": sKeyboardLoader,
             "s_monitors": sMonitorsLoader,
             "s_startup":  sStartupLoader,
-            "d_engine":     dEngineLoader,
+            "d_general":    dGeneralLoader,
             "d_widgets":    dWidgetsLoader,
             "d_position":   dPositionLoader,
             "d_style":      dStyleLoader,
@@ -712,7 +555,6 @@ Item {
             "d_zones":      dZonesLoader,
             "d_modules":    dModulesLoader,
             "d_workspaces": dWorkspacesLoader,
-            "d_classic":       dClassicLoader,
             "d_launcher":   launcherLoader,
             "d_idle":          idleLoader,
             "d_gpu":           gpuLoader,
@@ -722,12 +564,43 @@ Item {
             "d_animations":    animationsLoader,
             "d_input":         inputLoader,
             "d_shadows":       dShadowsLoader,
+            "d_frame":         dFrameLoader,
             "d_glass":         dGlassLoader,
-            "d_mascots":       dMascotsLoader
+            "d_plugins":       dPluginsLoader,
+            "d_appearance":    dAppearanceLoader
         };
         return map[id] || null;
     }
+    // Plugin-contributed pages (p_<id>): loaded on demand. Managed plugins
+    // load relatively (like every shell page: file:// loading changes
+    // unqualified type resolution — QtQuick.Controls' Config would shadow the
+    // core singleton). User plugins load via file:// and stay self-contained.
+    function pluginPageFile(pid) {
+        let list = PluginsCatalog.plugins || [];
+        for (let i = 0; i < list.length; i++) {
+            let p = list[i] || {};
+            let s = (p.settings && typeof p.settings === "object") ? p.settings : null;
+            if (p.id !== pid || !s || !s.page) continue;
+            let page = String(s.page).replace(/^\.\//, "");
+            if (PluginsCatalog.isManaged(p)) return "../plugins/" + pid + "/" + page;
+            return PluginsCatalog.uiUrl(p, page);
+        }
+        return "";
+    }
+    property var _dynamicPageEntry: null
     function ensurePage(id) {
+        if (id.indexOf("p_") === 0) {
+            let pid = id.substring(2);
+            let file = root.pluginPageFile(pid);
+            if (file === "" || root._dynamicPageId === pid) return;
+            let entry = null;
+            let list = PluginsCatalog.plugins || [];
+            for (let i = 0; i < list.length; i++) if (list[i] && list[i].id === pid) { entry = list[i]; break; }
+            root._dynamicPageEntry = entry;
+            dynamicPageLoader.setSource(file, { bar: root });
+            root._dynamicPageId = pid;
+            return;
+        }
         let loader = root.pageLoader(id);
         if (!loader) return;
         // NOTE: Loader.source is a QUrl — strict-compare its string form, a
@@ -747,6 +620,14 @@ Item {
         }
     }
     onCurrentPageChanged: root.ensurePage(root.currentPage)
+    // Plugin pages can be requested before the first scan finishes; retry
+    // when the catalog updates.
+    Connections {
+        target: PluginsCatalog
+        function onRevChanged() {
+            if (root.currentPage.indexOf("p_") === 0) root.ensurePage(root.currentPage);
+        }
+    }
 
 
 
@@ -1389,8 +1270,8 @@ Item {
                     opacity: root.introSidebar
                     transform: Translate { x: s(-30) * (1.0 - root.introSidebar) }
 
-                    // Brand: caja mauve + título + paleta activa en vivo
-                    Column {
+                    // Brand: base16 palette swatches (live — Colors watcher keeps them fresh)
+                    Grid {
                         id: brandCol
                         anchors.top: parent.top
                         anchors.left: parent.left
@@ -1398,47 +1279,17 @@ Item {
                         anchors.topMargin: s(15)
                         anchors.leftMargin: s(15)
                         anchors.rightMargin: s(15)
-                        spacing: s(10)
-                        Row {
-                            width: parent.width
-                            spacing: s(12)
-                            Rectangle {
-                                width: s(36); height: s(36); radius: s(13)
-                                color: colors.mauve
-                                Text {
-                                    anchors.centerIn: parent
-                                    text: "󰫧"
-                                    font.family: "Hack Nerd Font"
-                                    font.pixelSize: s(20)
-                                    color: colors.crust
-                                }
-                            }
-                            Column {
-                                anchors.verticalCenter: parent.verticalCenter
-                                spacing: s(2)
-                                Text {
-                                    text: "Settings"
-                                    font.family: "Hack Nerd Font"
-                                    font.pixelSize: s(15)
-                                    font.weight: Font.Black
-                                    color: colors.text
-                                }
-                                Row {
-                                    spacing: s(6)
-                                    Rectangle {
-                                        width: s(8); height: s(8); radius: s(4)
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        color: colors.mauve
-                                    }
-                                    Text {
-                                        // Live palette name (Colors watcher keeps it fresh)
-                                        text: themeColors.paletteName
-                                        font.family: "Hack Nerd Font"
-                                        font.pixelSize: s(11)
-                                        color: colors.subtext0
-                                        anchors.verticalCenter: parent.verticalCenter
-                                    }
-                                }
+                        columns: 8
+                        spacing: s(5)
+
+                        Repeater {
+                            model: 16
+                            delegate: Rectangle {
+                                required property int index
+                                width: s(16); height: s(16); radius: s(4)
+                                color: colors["color" + index]
+                                border.width: 1
+                                border.color: Qt.alpha(colors.text, 0.10)
                             }
                         }
                     }
@@ -1547,18 +1398,10 @@ Item {
                                             height: navItemsCol.height
                                             visible: !navGroupCol.modelData.collapsed
 
-                                            Rectangle {
-                                                x: s(6)
-                                                width: s(2)
-                                                radius: s(1)
-                                                height: Math.max(0, parent.height - s(8))
-                                                anchors.verticalCenter: parent.verticalCenter
-                                                color: Qt.alpha(colors.surface1, 0.5)
-                                            }
                                             Column {
                                                 id: navItemsCol
-                                                x: s(14)
-                                                width: parent.width - s(14)
+                                                x: 0
+                                                width: parent.width
                                                 spacing: 0
                                                 Repeater {
                                                     model: root.groupItems(navGroupCol.modelData)
@@ -1670,6 +1513,16 @@ Item {
                         Behavior on opacity { NumberAnimation { duration: 250 } }
                     }
                     Loader {
+                        id: dFrameLoader
+                        anchors.fill: parent
+                        visible: root.currentPage === "d_frame"
+                        opacity: visible ? 1.0 : 0.0
+                        property real slideY: visible ? 0 : root.s(10)
+                        Behavior on slideY { NumberAnimation { duration: 250; easing.type: Easing.OutQuart } }
+                        transform: Translate { y: dFrameLoader.slideY }
+                        Behavior on opacity { NumberAnimation { duration: 250 } }
+                    }
+                    Loader {
                         id: dGlassLoader
                         anchors.fill: parent
                         visible: root.currentPage === "d_glass"
@@ -1680,23 +1533,45 @@ Item {
                         Behavior on opacity { NumberAnimation { duration: 250 } }
                     }
                     Loader {
-                        id: dMascotsLoader
+                        id: dAppearanceLoader
                         anchors.fill: parent
-                        visible: root.currentPage === "d_mascots"
+                        visible: root.currentPage === "d_appearance"
                         opacity: visible ? 1.0 : 0.0
                         property real slideY: visible ? 0 : root.s(10)
                         Behavior on slideY { NumberAnimation { duration: 250; easing.type: Easing.OutQuart } }
-                        transform: Translate { y: dMascotsLoader.slideY }
+                        transform: Translate { y: dAppearanceLoader.slideY }
                         Behavior on opacity { NumberAnimation { duration: 250 } }
                     }
                     Loader {
-                        id: dEngineLoader
+                        id: dPluginsLoader
                         anchors.fill: parent
-                        visible: root.currentPage === "d_engine"
+                        visible: root.currentPage === "d_plugins"
                         opacity: visible ? 1.0 : 0.0
                         property real slideY: visible ? 0 : root.s(10)
                         Behavior on slideY { NumberAnimation { duration: 250; easing.type: Easing.OutQuart } }
-                        transform: Translate { y: dEngineLoader.slideY }
+                        transform: Translate { y: dPluginsLoader.slideY }
+                        Behavior on opacity { NumberAnimation { duration: 250 } }
+                    }
+                    Loader {
+                        id: dynamicPageLoader
+                        anchors.fill: parent
+                        onLoaded: if (item && item.host !== undefined && root._dynamicPageEntry)
+                            item.host = HostApi.forPlugin(root._dynamicPageEntry)
+                        visible: root.currentPage.indexOf("p_") === 0
+                        opacity: visible ? 1.0 : 0.0
+                        property real slideY: visible ? 0 : root.s(10)
+                        Behavior on slideY { NumberAnimation { duration: 250; easing.type: Easing.OutQuart } }
+                        transform: Translate { y: dynamicPageLoader.slideY }
+                        Behavior on opacity { NumberAnimation { duration: 250 } }
+                    }
+                    Loader {
+                        id: dGeneralLoader
+                        anchors.fill: parent
+                        visible: root.currentPage === "d_general"
+                        opacity: visible ? 1.0 : 0.0
+                        property real slideY: visible ? 0 : root.s(10)
+                        Behavior on slideY { NumberAnimation { duration: 250; easing.type: Easing.OutQuart } }
+                        transform: Translate { y: dGeneralLoader.slideY }
                         Behavior on opacity { NumberAnimation { duration: 250 } }
                     }
                     Loader {
@@ -1759,17 +1634,6 @@ Item {
                         Behavior on slideY { NumberAnimation { duration: 250; easing.type: Easing.OutQuart } }
                         transform: Translate { y: dWorkspacesLoader.slideY }
                         Behavior on opacity { NumberAnimation { duration: 250 } }
-                    }
-                    Loader {
-                        id: dClassicLoader
-                        anchors.fill: parent
-                        visible: root.currentPage === "d_classic"
-                        opacity: visible ? 1.0 : 0.0
-                        property real slideY: visible ? 0 : root.s(10)
-                        Behavior on slideY { NumberAnimation { duration: 250; easing.type: Easing.OutQuart } }
-                        transform: Translate { y: dClassicLoader.slideY }
-                        Behavior on opacity { NumberAnimation { duration: 250 } }
-                        onLoaded: { if (dClassicLoader.item) root.classicPage = dClassicLoader.item; }
                     }
                     Loader {
                         id: launcherLoader
@@ -1864,16 +1728,6 @@ Item {
                         Behavior on opacity { NumberAnimation { duration: 250 } }
                     }
                     Loader {
-                        id: sTimexLoader
-                        anchors.fill: parent
-                        visible: root.currentPage === "s_timex"
-                        opacity: visible ? 1.0 : 0.0
-                        property real slideY: visible ? 0 : root.s(10)
-                        Behavior on slideY { NumberAnimation { duration: 250; easing.type: Easing.OutQuart } }
-                        transform: Translate { y: sTimexLoader.slideY }
-                        Behavior on opacity { NumberAnimation { duration: 250 } }
-                    }
-                    Loader {
                         id: sKeyboardLoader
                         anchors.fill: parent
                         visible: root.currentPage === "s_keyboard"
@@ -1914,7 +1768,10 @@ Item {
                         compact: true
                         bar: root
                         label: "+ Add"
-                        visible: root.currentPage === "s_keyboard" || root.currentPage === "s_startup"
+                        // The Keyboard/Startup tabs now render their own in-flow
+                        // "+ Add" (as the last section row), so the floating
+                        // button would duplicate it.
+                        visible: false
                         anchors.right: parent.right
                         anchors.bottom: parent.bottom
                         anchors.rightMargin: s(18)
@@ -1958,18 +1815,13 @@ Item {
     // Pages never import BarLayout: they declare intent signals, this root
     // computes and commits through the shared helpers. Targets are the lazy
     // item properties (null until loaded): Connections follows the binding,
-    // so the routes arm themselves when zonesPage/classicPage get assigned in
-    // the Loaders' onLoaded.
+    // so the routes arm themselves when zonesPage gets assigned in the
+    // Loader's onLoaded.
     Connections {
         target: root.zonesPage
         function onAddZone() { root.applyBar(BarLayout.addZone(root.bar, "start")); }
         function onCenterAll() { root.applyBar(BarLayout.arrangeAllInZone(root.bar, "center")); }
         function onResetBar() { root.applyBar(BarLayout.defaultBar()); }
-    }
-    Connections {
-        target: root.classicPage
-        function onMirrorBar() { root.mirrorBarAction(); }
-        function onClassicDefaults() { root.classicDefaultsAction(); }
     }
 
     // ════ DnD GHOST (Phase D3) ════
@@ -1984,9 +1836,7 @@ Item {
 
         Rectangle {
             id: dndGhost
-            // group drags have dndModuleId === "" (glyph + member count).
-            property bool groupGhost: root.dndModuleId === ""
-            property var modInfo: root.dndModuleId !== "" ? BarLayout.getModule(root.dndModuleId) : null
+            property var modInfo: BarLayout.getModule(root.dndModuleId)
             readonly property int ghostW: ghostRow.implicitWidth + root.s(24)
             height: root.s(30)
             width: ghostW
@@ -2003,13 +1853,11 @@ Item {
                 anchors.centerIn: parent
                 spacing: root.s(5)
                 Text {
-                    text: dndGhost.groupGhost ? "◧" : (dndGhost.modInfo ? dndGhost.modInfo.icon : "?")
+                    text: dndGhost.modInfo ? dndGhost.modInfo.icon : "?"
                     font.family: "Hack Nerd Font"; font.pixelSize: root.s(12); color: colors.crust
                 }
                 Text {
-                    text: dndGhost.groupGhost
-                        ? ("Group" + (root.classicGroupCount() > 0 ? " (" + root.classicGroupCount() + ")" : ""))
-                        : (dndGhost.modInfo ? dndGhost.modInfo.label : root.dndModuleId)
+                    text: dndGhost.modInfo ? dndGhost.modInfo.label : root.dndModuleId
                     font.family: "Hack Nerd Font"; font.pixelSize: root.s(11); font.weight: Font.Bold; color: colors.crust
                 }
             }
@@ -2029,8 +1877,8 @@ Item {
         closeSequence.start();
         event.accepted = true;
     }
-    // Phase 2: Tab / Shift+Tab cycle the pages visible under the current
-    // engine (same list the rail renders); ESC keeps the phase-1 contract.
+    // Phase 2: Tab / Shift+Tab cycle the visible pages (same list the rail
+    // renders); ESC keeps the phase-1 contract.
     // Con el buscador abierto no cambian de página (el foco vive en el input).
     Keys.onTabPressed: {
         event.accepted = true;

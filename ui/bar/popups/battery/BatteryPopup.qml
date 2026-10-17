@@ -324,15 +324,15 @@ Item {
         // Unified Outer Background
         Rectangle {
             anchors.fill: parent
-            radius: window.s(26)
-            color: window.base
-            border.color: window.surface0 
+            radius: window.s(Theme.radiusLg)
+            color: Theme.surfaceContainerLow
+            border.color: Theme.outlineVariant
             border.width: 1
             clip: true
 
             RowLayout {
                 anchors.fill: parent
-                spacing: window.s(15) // Seamless separation instead of a line
+                spacing: window.s(Theme.gapLg) // Seamless separation instead of a line
 
                 // ==========================================
                 // LEFT SIDE: NOTIFICATION CENTER
@@ -343,14 +343,14 @@ Item {
 
                     ColumnLayout {
                         anchors.fill: parent
-                        anchors.margins: window.s(20)
-                        spacing: window.s(15)
+                        anchors.margins: window.s(Theme.gapLg)
+                        spacing: window.s(Theme.gapLg)
 
                         // --- Notification Header & DND Toggle ---
                         RowLayout {
                             Layout.fillWidth: true
                             Layout.preferredHeight: window.s(38)
-                            spacing: window.s(12)
+                            spacing: window.s(Theme.gapMd)
                             
                             transform: Translate { y: window.s(-20) * (1.0 - introTop) }
                             opacity: introTop
@@ -369,9 +369,9 @@ Item {
                             Rectangle {
                                 Layout.preferredWidth: dndMa.containsMouse ? window.s(38) + dndText.implicitWidth + window.s(8) : window.s(38)
                                 Layout.preferredHeight: window.s(38)
-                                radius: window.s(16)
-                                color: window.dndEnabled ? Qt.alpha(window.red, 0.15) : (dndMa.containsMouse ? window.surface1 : "transparent")
-                                border.color: window.dndEnabled ? window.red : (dndMa.containsMouse ? window.surface2 : "transparent")
+                                radius: window.s(Theme.radiusMd)
+                                color: window.dndEnabled ? Qt.alpha(window.red, 0.15) : (dndMa.containsMouse ? Theme.stateLayer(window.red, Theme.stateHover) : "transparent")
+                                border.color: window.dndEnabled ? window.red : (dndMa.containsMouse ? Theme.outlineVariant : "transparent")
                                 border.width: 1
                                 clip: true
 
@@ -381,9 +381,9 @@ Item {
 
                                 Row {
                                     anchors.right: parent.right
-                                    anchors.rightMargin: window.s(10)
+                                    anchors.rightMargin: window.s(Theme.gapSm)
                                     anchors.verticalCenter: parent.verticalCenter
-                                    spacing: window.s(8)
+                                    spacing: window.s(Theme.gapSm)
 
                                     Text {
                                         id: dndText
@@ -439,7 +439,7 @@ Item {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             model: window.notifModel
-                            spacing: window.s(8)
+                            spacing: window.s(Theme.gapSm)
                             clip: true
                             
                             opacity: introNotifs
@@ -479,17 +479,17 @@ Item {
                                 
                                 Rectangle {
                                     anchors.fill: parent
-                                    anchors.topMargin: window.s(10)
-                                    anchors.bottomMargin: window.s(4)
-                                    color: headerMa.containsMouse ? window.surface1 : "transparent"
-                                    radius: window.s(10)
+                                    anchors.topMargin: window.s(Theme.gapSm)
+                                    anchors.bottomMargin: window.s(Theme.gapXs)
+                                    color: headerMa.containsMouse ? Theme.stateLayer(window.mauve, Theme.stateHover) : "transparent"
+                                    radius: window.s(Theme.radiusMd)
                                     Behavior on color { ColorAnimation { duration: 150 } }
 
                                     RowLayout {
                                         anchors.fill: parent
-                                        anchors.leftMargin: window.s(6)
-                                        anchors.rightMargin: window.s(6)
-                                        spacing: window.s(8)
+                                        anchors.leftMargin: window.s(Theme.gapXs)
+                                        anchors.rightMargin: window.s(Theme.gapXs)
+                                        spacing: window.s(Theme.gapSm)
 
                                         // Clickable Area for Collapse Toggle
                                         MouseArea {
@@ -502,7 +502,7 @@ Item {
 
                                             RowLayout {
                                                 anchors.fill: parent
-                                                spacing: window.s(8)
+                                                spacing: window.s(Theme.gapSm)
                                                 
                                                 Text {
                                                     font.family: "Hack Nerd Font"
@@ -528,8 +528,8 @@ Item {
                                         Rectangle {
                                             Layout.preferredWidth: window.s(26)
                                             Layout.preferredHeight: window.s(26)
-                                            radius: window.s(17)
-                                            color: groupClearMa.containsMouse ? window.surface2 : "transparent"
+                                            radius: Theme.radiusFull
+                                            color: groupClearMa.containsMouse ? Theme.stateLayer(window.red, Theme.stateHover) : "transparent"
                                             Behavior on color { ColorAnimation { duration: 150 } }
 
                                             Text {
@@ -600,9 +600,9 @@ Item {
                                     id: innerCard
                                     width: parent.width
                                     height: cardContent.height + window.s(24)
-                                    radius: window.s(18)
-                                    color: cardHover.containsMouse ? window.surface1 : window.surface0
-                                    border.color: cardHover.containsMouse ? window.surface2 : "transparent"
+                                    radius: window.s(Theme.radiusMd)
+                                    color: cardHover.containsMouse ? Theme.stateLayer(window.mauve, Theme.stateHover) : Theme.surfaceContainer
+                                    border.color: cardHover.containsMouse ? Theme.outlineVariant : "transparent"
                                     border.width: 1
                                     clip: true
                                     Behavior on color { ColorAnimation { duration: 200 } }
@@ -647,13 +647,13 @@ Item {
                                         anchors.left: parent.left
                                         anchors.right: parent.right
                                         anchors.top: parent.top
-                                        anchors.margins: window.s(14)
-                                        anchors.leftMargin: window.s(18) // make room for the accent stripe
-                                        spacing: window.s(6)
+                                        anchors.margins: window.s(Theme.gapMd)
+                                        anchors.leftMargin: window.s(Theme.gapLg) // make room for the accent stripe
+                                        spacing: window.s(Theme.gapXs)
 
                                         RowLayout {
                                             Layout.fillWidth: true
-                                            spacing: window.s(8)
+                                            spacing: window.s(Theme.gapSm)
 
                                             Text {
                                                 text: model.summary || "Notification"
@@ -670,8 +670,8 @@ Item {
                                             Rectangle {
                                                 Layout.preferredWidth: window.s(22)
                                                 Layout.preferredHeight: window.s(22)
-                                                radius: window.s(14)
-                                                color: itemClearMa.containsMouse ? Qt.alpha(window.red, 0.15) : "transparent"
+                                                radius: Theme.radiusFull
+                                                color: itemClearMa.containsMouse ? Theme.stateLayer(window.red, Theme.statePress) : "transparent"
                                                 Behavior on color { ColorAnimation { duration: 150 } }
 
                                                 Text {
@@ -707,8 +707,8 @@ Item {
                                         // Action Buttons Dock 
                                         RowLayout {
                                             Layout.fillWidth: true
-                                            Layout.topMargin: delegateWrapper.actionArray.length > 0 ? window.s(6) : 0
-                                            spacing: window.s(8)
+                                            Layout.topMargin: delegateWrapper.actionArray.length > 0 ? window.s(Theme.gapXs) : 0
+                                            spacing: window.s(Theme.gapSm)
                                             visible: delegateWrapper.actionArray.length > 0
 
                                             Repeater {
@@ -716,7 +716,7 @@ Item {
                                                 delegate: Rectangle {
                                                     Layout.fillWidth: true
                                                     Layout.preferredHeight: window.s(28)
-                                                    radius: window.s(10)
+                                                    radius: window.s(Theme.radiusSm)
 
                                                     property bool isPrimary: index === 0
 
@@ -724,11 +724,11 @@ Item {
                                                         if (isPrimary) {
                                                             return actionMouseArea.containsMouse ? window.blue : Qt.darker(window.blue, 1.2)
                                                         } else {
-                                                            return actionMouseArea.containsMouse ? window.surface2 : window.surface1
+                                                            return actionMouseArea.containsMouse ? Theme.stateLayer(Theme.text, Theme.stateHover) : Theme.surfaceContainer
                                                         }
                                                     }
                                                     
-                                                    border.color: isPrimary ? window.blue : window.surface2
+                                                    border.color: isPrimary ? window.blue : Theme.outlineVariant
                                                     border.width: 1
                                                     
                                                     Behavior on color { ColorAnimation { duration: 150 } }
@@ -802,7 +802,7 @@ Item {
                     Row {
                         anchors.top: parent.top
                         anchors.left: parent.left
-                        anchors.margins: window.s(25)
+                        anchors.margins: window.s(Theme.gapXl)
                         spacing: window.s(6)
                         
                         transform: Translate { y: window.s(-20) * (1.0 - introTop) }
@@ -810,10 +810,10 @@ Item {
                         
                         // Hours Box
                         Rectangle {
-                            width: window.s(44); height: window.s(48); radius: window.s(13)
-                            color: window.surface0; border.color: window.surface1; border.width: 1
+                            width: window.s(44); height: window.s(48); radius: window.s(Theme.radiusMd)
+                            color: Theme.surfaceContainer; border.color: Theme.outlineVariant; border.width: 1
                             
-                            Rectangle { anchors.fill: parent; radius: window.s(13); color: window.ambientPrimary; opacity: 0.05; Behavior on color { ColorAnimation { duration: 1000 } } }
+                            Rectangle { anchors.fill: parent; radius: window.s(Theme.radiusMd); color: window.ambientPrimary; opacity: 0.05; Behavior on color { ColorAnimation { duration: 1000 } } }
                             Column {
                                 anchors.centerIn: parent
                                 Text { 
@@ -849,10 +849,10 @@ Item {
 
                         // Mins Box
                         Rectangle {
-                            width: window.s(44); height: window.s(48); radius: window.s(13)
-                            color: window.surface0; border.color: window.surface1; border.width: 1
+                            width: window.s(44); height: window.s(48); radius: window.s(Theme.radiusMd)
+                            color: Theme.surfaceContainer; border.color: Theme.outlineVariant; border.width: 1
                             
-                            Rectangle { anchors.fill: parent; radius: window.s(13); color: window.ambientSecondary; opacity: 0.05; Behavior on color { ColorAnimation { duration: 1000 } } }
+                            Rectangle { anchors.fill: parent; radius: window.s(Theme.radiusMd); color: window.ambientSecondary; opacity: 0.05; Behavior on color { ColorAnimation { duration: 1000 } } }
                             Column {
                                 anchors.centerIn: parent
                                 Text { 
@@ -874,11 +874,11 @@ Item {
                     Rectangle {
                         id: logoutBtn
                         anchors.top: parent.top; anchors.right: parent.right
-                        anchors.margins: window.s(25)
-                        width: logoutMa.containsMouse ? window.s(44) + usernameText.implicitWidth + window.s(12) : window.s(44)
-                        height: window.s(44); radius: window.s(18)
-                        color: logoutMa.containsMouse ? window.surface1 : "transparent"
-                        border.color: logoutMa.containsMouse ? window.surface2 : "transparent"
+                        anchors.margins: window.s(Theme.gapXl)
+                        width: logoutMa.containsMouse ? window.s(44) + usernameText.implicitWidth + window.s(Theme.gapMd) : window.s(44)
+                        height: window.s(44); radius: window.s(Theme.radiusMd)
+                        color: logoutMa.containsMouse ? Theme.stateLayer(window.red, Theme.stateHover) : "transparent"
+                        border.color: logoutMa.containsMouse ? Theme.outlineVariant : "transparent"
                         clip: true
                         
                         transform: Translate { y: window.s(-20) * (1.0 - introTop) }
@@ -890,9 +890,9 @@ Item {
 
                         Row {
                             anchors.right: parent.right
-                            anchors.rightMargin: window.s(13)
+                            anchors.rightMargin: window.s(Theme.gapMd)
                             anchors.verticalCenter: parent.verticalCenter
-                            spacing: window.s(12)
+                            spacing: window.s(Theme.gapMd)
 
                             Text {
                                 id: usernameText
@@ -1047,7 +1047,7 @@ Item {
                                         ctx.lineWidth = window.s(8);
                                         ctx.beginPath();
                                         ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
-                                        ctx.strokeStyle = window.surface1;
+                                        ctx.strokeStyle = Theme.surfaceContainer;
                                         ctx.stroke();
                                         
                                         var fillGrad = ctx.createLinearGradient(0, height, width, 0);
@@ -1171,30 +1171,30 @@ Item {
                             anchors.bottom: parent.bottom
                             anchors.left: parent.left
                             anchors.right: parent.right
-                            anchors.margins: window.s(25)
-                            spacing: window.s(15)
+                            anchors.margins: window.s(Theme.gapXl)
+                            spacing: window.s(Theme.gapLg)
 
                             // 1. HARDWARE CONTROLS DOCK (Sliders)
                             Rectangle {
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: window.s(96)
-                                radius: window.s(18)
-                                color: window.surface0
-                                border.color: window.surface1
-                                border.width: 1
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: window.s(96)
+                            radius: window.s(Theme.radiusMd)
+                            color: Theme.surfaceContainer
+                            border.color: Theme.outlineVariant
+                            border.width: 1
 
-                                opacity: introSliders
-                                transform: Translate { y: window.s(20) * (1.0 - introSliders) }
+                            opacity: introSliders
+                            transform: Translate { y: window.s(20) * (1.0 - introSliders) }
 
-                                ColumnLayout {
-                                    anchors.fill: parent
-                                    anchors.margins: window.s(14)
-                                    spacing: window.s(12)
+                            ColumnLayout {
+                                anchors.fill: parent
+                                anchors.margins: window.s(Theme.gapMd)
+                                spacing: window.s(Theme.gapMd)
 
                                     // Brightness Slider
                                     RowLayout {
                                         Layout.fillWidth: true
-                                        spacing: window.s(15)
+                                        spacing: window.s(Theme.gapLg)
 
                                         Item {
                                             Layout.preferredWidth: window.s(32)
@@ -1227,16 +1227,16 @@ Item {
 
                                             Rectangle {
                                                 anchors.fill: parent
-                                                radius: window.s(12)
-                                                color: window.surface1
-                                                border.color: window.surface2
+                                                radius: Theme.radiusFull
+                                                color: Theme.surfaceContainer
+                                                border.color: Theme.outlineVariant
                                                 border.width: 1
                                                 clip: true
 
                                                 Rectangle {
                                                     height: parent.height
                                                     width: parent.width * (window.sysBrightness / 100)
-                                                    radius: window.s(12)
+                                                    radius: Theme.radiusFull
                                                     opacity: briMa.containsMouse ? 1.0 : 0.85
                                                     Behavior on opacity { NumberAnimation { duration: 200 } }
                                                     Behavior on width { enabled: !window.isDraggingBri; NumberAnimation { duration: 200; easing.type: Easing.OutQuint } }
@@ -1270,14 +1270,14 @@ Item {
                                     // Volume Slider
                                     RowLayout {
                                         Layout.fillWidth: true
-                                        spacing: window.s(15)
+                                        spacing: window.s(Theme.gapLg)
 
                                         Rectangle {
-                                            Layout.preferredWidth: window.s(32)
-                                            Layout.preferredHeight: window.s(32)
-                                            radius: window.s(21)
-                                            color: volIconMa.containsMouse ? window.surface1 : "transparent"
-                                            border.color: volIconMa.containsMouse ? window.profileStart : "transparent"
+                                        Layout.preferredWidth: window.s(32)
+                                        Layout.preferredHeight: window.s(32)
+                                        radius: Theme.radiusFull
+                                        color: volIconMa.containsMouse ? Theme.stateLayer(window.profileStart, Theme.stateHover) : "transparent"
+                                        border.color: volIconMa.containsMouse ? window.profileStart : "transparent"
                                             Behavior on color { ColorAnimation { duration: 150 } }
                                             Behavior on border.color { ColorAnimation { duration: 150 } }
 
@@ -1326,16 +1326,16 @@ Item {
 
                                             Rectangle {
                                                 anchors.fill: parent
-                                                radius: window.s(12)
-                                                color: window.surface1
-                                                border.color: window.surface2
+                                                radius: Theme.radiusFull
+                                                color: Theme.surfaceContainer
+                                                border.color: Theme.outlineVariant
                                                 border.width: 1
                                                 clip: true
 
                                                 Rectangle {
                                                     height: parent.height
                                                     width: parent.width * (window.sysVolume / 100)
-                                                    radius: window.s(12)
+                                                    radius: Theme.radiusFull
                                                     opacity: window.sysMuted ? 0.5 : (volMa.containsMouse ? 1.0 : 0.85)
                                                     Behavior on opacity { NumberAnimation { duration: 200 } }
                                                     Behavior on width { enabled: !window.isDraggingVol; NumberAnimation { duration: 200; easing.type: Easing.OutQuint } }
@@ -1372,7 +1372,7 @@ Item {
                             RowLayout {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: window.s(75)
-                                spacing: window.s(12)
+                                spacing: window.s(Theme.gapMd)
                                 
                                 Repeater {
                                     model: ListModel {
@@ -1386,16 +1386,16 @@ Item {
                                         id: actionCapsule
                                         Layout.fillWidth: true
                                         Layout.fillHeight: true
-                                        radius: window.s(18)
+                                        radius: window.s(Theme.radiusMd)
 
                                         opacity: introActions
                                         transform: Translate { y: window.s(30) * (1.0 - introActions) + (index * window.s(12) * (1.0 - introActions)) }
                                         
-                                        property color c1: window[baseColor] || window.surface1
+                                        property color c1: window[baseColor] || Theme.surfaceContainer
                                         property color c2: Qt.lighter(c1, 1.2)
 
-                                        color: actionMa.containsMouse ? window.surface1 : window.surface0
-                                        border.color: actionMa.containsMouse ? c1 : window.surface2
+                                        color: actionMa.containsMouse ? Theme.stateLayer(c1, Theme.stateHover) : Theme.surfaceContainer
+                                        border.color: actionMa.containsMouse ? c1 : Theme.outlineVariant
                                         border.width: actionMa.containsMouse ? 2 : 1
                                         Behavior on color { ColorAnimation { duration: 200 } }
                                         Behavior on border.color { ColorAnimation { duration: 200 } }
@@ -1467,7 +1467,7 @@ Item {
                                         }
 
                                         Rectangle {
-                                            anchors.fill: parent; radius: window.s(18); color: "#ffffff"
+                                            anchors.fill: parent; radius: window.s(Theme.radiusMd); color: "#ffffff"
                                             opacity: actionCapsule.flashOpacity
                                             PropertyAnimation on opacity { id: cardFlashAnim; to: 0; duration: 500; easing.type: Easing.OutExpo }
                                         }
@@ -1542,9 +1542,9 @@ Item {
                             Rectangle {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: window.s(54)
-                                radius: window.s(18)
-                                color: window.surface0 
-                                border.color: window.surface1
+                                radius: window.s(Theme.radiusMd)
+                                color: Theme.surfaceContainer
+                                border.color: Theme.outlineVariant
                                 border.width: 1
 
                                 opacity: introProfiles
@@ -1555,7 +1555,7 @@ Item {
                                     width: (parent.width - window.s(2)) / 3 
                                     height: parent.height - window.s(2)
                                     y: window.s(1)
-                                    radius: window.s(13)
+                                    radius: window.s(Theme.radiusSm)
                                     x: {
                                         if (window.powerProfile === "performance") return window.s(1);
                                         if (window.powerProfile === "balanced") return width + window.s(1);

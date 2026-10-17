@@ -4,23 +4,27 @@
 
 SETTINGS="$HOME/.config/hypr/settings.json"
 
-# Compositor split: XDG_CURRENT_DESKTOP selects the branch (Hyprland fallback),
-# matching core/Compositor.qml. The KEY=VALUE output contract is unchanged.
+# Compositor split: XDG_CURRENT_DESKTOP/NIRI_SOCKET selects the branch
+# (Hyprland fallback), matching core/Compositor.qml. The KEY=VALUE contract is
+# unchanged.
 desktop="$(printf '%s' "${XDG_CURRENT_DESKTOP:-}" | tr '[:upper:]' '[:lower:]')"
 case "$desktop" in
     *niri*) NIRI=1 ;;
     *)      NIRI=0 ;;
 esac
+[ -n "${NIRI_SOCKET:-}" ] && NIRI=1
 
 echo "os=${PRETTY_NAME:-unknown}"
 echo "host=$(cat /etc/hostname 2>/dev/null || hostname)"
 echo "kernel=$(uname -r)"
 if [ "$NIRI" = "1" ]; then
     echo "wm=niri"
-    echo "hypr_ver=$(niri msg --json version 2>/dev/null | jq -r '.compositor // "unknown"' 2>/dev/null || echo unknown)"
+    v="$(niri msg --json version 2>/dev/null | jq -r '.compositor // empty' 2>/dev/null || true)"
+    echo "hypr_ver=${v:-unknown}"
 else
     echo "wm=$(hyprctl version 2>/dev/null | head -1 | cut -d' ' -f1 || echo unknown)"
-    echo "hypr_ver=$(hyprctl version -j 2>/dev/null | jq -r '.tag // "unknown"' 2>/dev/null || echo unknown)"
+    v="$(hyprctl version -j 2>/dev/null | jq -r '.tag // empty' 2>/dev/null || true)"
+    echo "hypr_ver=${v:-unknown}"
 fi
 echo "qs_ver=$(qs --version 2>/dev/null | awk '{print $2}' || echo unknown)"
 echo "user=${USER:-unknown}"
@@ -70,7 +74,7 @@ fi
 
 # equisdots customization summary
 echo "palette=$(jq -r '.bar.palette // "x"' "$SETTINGS" 2>/dev/null || echo x)"
-echo "bar_engine=$(jq -r '.barEngine // "bar"' "$SETTINGS" 2>/dev/null || echo bar)"
+echo "bar_enabled=$(jq -r '.bar.enabled // true' "$SETTINGS" 2>/dev/null || echo true)"
 echo "gtk_theme=$(gsettings get org.gnome.desktop.interface gtk-theme 2>/dev/null | tr -d "'")"
 
 VER_FILE="$HOME/.local/state/equisdots-version"
@@ -84,7 +88,16 @@ else
 fi
 
 # timex engine status (provider|city|unit|configured|key_set|last_update|error)
-TX="$("$HOME/.local/bin/timex" status 2>/dev/null || timex status 2>/dev/null)"
+# The engine ships with the timex plugin: resolve its copy across deploy
+# layouts (managed shell tree, user plugin, classic wrapper).
+TIMEX_BIN=""
+for c in "$HOME/.config/hypr/scripts/quickshell/ui/plugins/timex/core/timex.sh" \
+         "$HOME/.config/hypr/plugins-user/timex/core/timex.sh" \
+         "$HOME/.local/bin/timex"; do
+    [ -f "$c" ] && { TIMEX_BIN="$c"; break; }
+done
+TX=""
+[ -n "$TIMEX_BIN" ] && TX="$(bash "$TIMEX_BIN" status 2>/dev/null)"
 if [ -n "$TX" ]; then
     IFS='|' read -r t_prov t_city t_unit _t_conf _t_key t_up t_err <<< "$TX"
     echo "timex_provider=${t_prov:-—}"
@@ -101,15 +114,23 @@ else
     echo "timex_updated=—"; echo "timex_error="
 fi
 
-# Repo revisions (dots clones; empty when the system was not installed via dots).
-# A trailing * marks a dirty working tree.
-for r in shell hyprland palettes theme-sync davincix timex dots; do
-    d="$HOME/.local/share/equisdots/$r"
+# Repo revisions (dots/dotsniri clones; empty when not installed).
+# A trailing * marks a dirty working tree. The niri stack lives under
+# equisdots-niri/, the shared stack under equisdots/.
+emit_rev() {
+    local name="$1" base="$2" d rev
+    d="$base/$name"
     if [ -d "$d/.git" ]; then
         rev="$(git -C "$d" rev-parse --short HEAD 2>/dev/null)"
         [ -n "$rev" ] && git -C "$d" status --porcelain 2>/dev/null | grep -q . && rev="${rev}*"
-        echo "repo_$r=$rev"
+        echo "repo_$name=$rev"
     else
-        echo "repo_$r="
+        echo "repo_$name="
     fi
+}
+for r in shell plugins plugin-api plugin-sdk nyx timex palettes theme-sync davincix dots; do
+    emit_rev "$r" "$HOME/.local/share/equisdots"
+done
+for r in niri niri-shell niri-meta niri-login nyx-niri; do
+    emit_rev "$r" "$HOME/.local/share/equisdots-niri"
 done

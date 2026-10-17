@@ -9,31 +9,36 @@ are the default.
 
 Source (this repo) | Target (shell tree) | Kind | Notes
 --- | --- | --- | ---
-`core/Compositor.qml` | `core/Compositor.qml` | modified | Adds backend selection on `XDG_CURRENT_DESKTOP` **or** a set `NIRI_SOCKET`, the neutral persistence methods and the neutral monitor/version/launch/session helpers (`monitorListCommand`, `refreshMonitorList`, `monitorsFromOutput`, `applyMonitorScale`, `applyMonitorConfig`, `compositorVersion`, `execApp`, `hasSubmaps`, `setSubmap`, `idleMode`, `quit`). The backend signal relay is held in the `_backendConn` property, because a `QtObject` has no default property and a child `Connections { }` made Quickshell fail to load the whole config. Existing surface unchanged.
-`core/compositors/Hyprland.qml` | `core/compositors/Hyprland.qml` | modified | Keeps every original command/script; adds `displayPoller`, `persistKeybinds`, `persistStartup`, `applyMonitors`, `resetMonitors`, `reload`, plus `monitorList`/`applyMonitorScale`/`applyMonitorConfig`/`compositorVersion`/`execApp`/`setSubmap`/`idleMode`/`quit` and `hasSubmaps = true`.
-`core/compositors/Niri.qml` | `core/compositors/Niri.qml` | **new** | niri backend over `niri msg`, implementing the same surface (`idleMode` via `niri_idle_mode.sh`, `quit` via `niri msg action quit --skip-confirmation`, `hasSubmaps = false`).
-`core/Config.qml` | `core/Config.qml` | modified | Keybind/startup/monitor persistence routes through `Compositor`. Same `settings.json` contract and monitor canvas math.
-`core/Effects.qml` | `core/Effects.qml` | **new** | Neutral effects singleton (same API as the old `HyprEffects`), backed by `effects.sh`.
-`core/HyprEffects.qml` | `core/HyprEffects.qml` | modified | Compatibility shim: forwards to `Effects` so `HyprlandPage.qml`/`WindowControls.qml` need no edit.
-`core/scripts/effects.sh` | `core/scripts/effects.sh` | **new** | Compositor-aware effects kernel (replaces the call site of `hypr-effects.sh`).
+`core/Compositor.qml` | `core/Compositor.qml` | modified | Adds backend selection on `XDG_CURRENT_DESKTOP` **or** a set `NIRI_SOCKET`, the neutral persistence methods and the neutral monitor/version/launch/session helpers. The backend signal relay is held in the `_backendConn` property (a `QtObject` has no default property).
+`core/compositors/Hyprland.qml` | `core/compositors/Hyprland.qml` | modified | Keeps every original command/script; adds the neutral persistence/monitor/version/launch surface.
+`core/compositors/Niri.qml` | `core/compositors/Niri.qml` | **new** | niri backend over `niri msg`, implementing the same surface.
+`core/Config.qml` | `core/Config.qml` | modified | Rebased on the SDK Settings façade; keybind/startup/monitor persistence route through `Compositor`, and the monitor poller is backend-owned.
+`core/Effects.qml` | `core/Effects.qml` | **new** | Neutral effects singleton (same API as `HyprEffects`), backed by `effects.sh`.
+`core/HyprEffects.qml` | `core/HyprEffects.qml` | modified | Compatibility shim: forwards to `Effects`.
+`core/scripts/effects.sh` | `core/scripts/effects.sh` | **new** | Compositor-aware effects kernel.
 `core/scripts/niri-workspaces.sh` | `core/scripts/niri-workspaces.sh` | **new** | Workspace-state daemon for niri; writes the same `workspaces.json` shape.
-`core/scripts/watchers/kb_fetch.sh` | `core/scripts/watchers/kb_fetch.sh` | modified | Compositor-aware layout fetch.
-`core/scripts/watchers/kb_wait.sh` | `core/scripts/watchers/kb_wait.sh` | modified | Compositor-aware layout event wait.
-`ui/bar/editor/persist-appearance.sh` | `ui/bar/editor/persist-appearance.sh` | **new** | Compositor-aware animations/input persistence (port of `persist-hypr.sh`).
-`ui/bar/editor/persist-hypr.sh` | `ui/bar/editor/persist-hypr.sh` | modified | Forwarder to `persist-appearance.sh` so `BarEditor.qml` needs no edit.
-`ui/panels/scale/ScalePicker.qml` | `ui/panels/scale/ScalePicker.qml` | modified | Reads the anchor monitor through `Compositor.monitorListCommand` + `Compositor.monitorsFromOutput`; applies through `Compositor.applyMonitorScale`. No `hyprctl` in the panel.
-`ui/panels/davincix/DavincixPicker.qml` | `ui/panels/davincix/DavincixPicker.qml` | modified | Monitor names come from `Compositor.monitorListCommand` + `Compositor.monitorsFromOutput` instead of `hyprctl monitors -j`.
-`ui/bar/editor/sysinfo.sh` | `ui/bar/editor/sysinfo.sh` | modified | Compositor-aware version and monitor block (`hyprctl` under Hyprland, `niri msg` under niri). Same `KEY=VALUE` contract.
-`ui/bar/popups/applauncher/appLauncher.qml` | `ui/bar/popups/applauncher/appLauncher.qml` | modified | Launches through `Compositor.execApp` (`Quickshell.execDetached`) instead of `hyprctl eval 'hl.dsp.exec_cmd(...)'`.
-`ui/settings/tabs/KeybindTab.qml` | `ui/settings/tabs/KeybindTab.qml` | modified | Submap enter/reset goes through `Compositor.setSubmap` and is skipped when `Compositor.hasSubmaps` is false; a short note is shown on niri. No crash without submap support.
-`ui/panels/focustime/focus_daemon.py` | `ui/panels/focustime/focus_daemon.py` | modified | Compositor-aware focus listener (`niri msg --json event-stream` under niri, `.socket2.sock` under Hyprland) and lock detection. Output contract (`focustime.db` schema + `focustime_state.json`) unchanged, so `FocusModule.qml`/`FocusTimePopup.qml` need no edit.
-`ui/panels/idle/IdlePopup.qml` | `ui/panels/idle/IdlePopup.qml` | modified | Mode switch calls `Compositor.idleMode(mode)` instead of `~/.config/hypr/scripts/idle-mode.sh`. The lock button keeps the shared `lock.sh` (compositor-neutral ext-session-lock).
-`ui/bar/editor/IdlePage.qml` | `ui/bar/editor/IdlePage.qml` | modified | Same idle routing through `Compositor.idleMode`; adds `import "../../../core"`. The reactive state file (`~/.config/hypr/idle-settings.json`) is unchanged and shared by both stacks.
-`ui/bar/BarEditor.qml` | `ui/bar/BarEditor.qml` | modified | The app-scale step (`appScaleStep`) calls `Compositor.applyMonitorScale("", Config.appScale)` instead of `scale-menu.sh`.
-`ui/bar/popups/battery/BatteryPopup.qml` | `ui/bar/popups/battery/BatteryPopup.qml` | modified | Logout button calls `Compositor.quit()` instead of `exit.sh`; keeps the reveal-on-hover UX, the exit animation and the widget-state close.
-`ui/bar/popups/battery/BatteryPopupAlt.qml` | `ui/bar/popups/battery/BatteryPopupAlt.qml` | modified | Same logout routing through `Compositor.quit()`, same preserved UX.
-`ui/bar/Colors.qml` | `ui/bar/Colors.qml` | modified | `borderHex("active")` derives from the palette's muted `color8` instead of the loud accent, so the niri border is a neutral grey that stays harmonious across palettes (manual overrides and per-palette roles still win).
-`ScreenshotOverlay.qml` | `ScreenshotOverlay.qml` | modified | `executeCapture`/`performQrScan` call the capture backend from `EQUISDOTS_SCREENSHOT_SCRIPT` (exported by the niri launcher `niri_screenshot.sh`) instead of the hard-coded Hyprland `screenshot.sh`. The overlay UI (region selection, still/video toggle, microphone selection) is unchanged, so niri shows the same equisdots overlay as Hyprland.
+`core/scripts/watchers/kb_fetch.sh` | same | modified | Compositor-aware layout fetch.
+`core/scripts/watchers/kb_wait.sh` | same | modified | Compositor-aware layout event wait.
+`ui/bar/BarEditor.qml` | same | modified | App-scale step calls `Compositor.applyMonitorScale` (no Hyprland-only script).
+`ui/bar/Colors.qml` | same | modified | Muted `color8` active-border default (manual overrides still win).
+`ui/bar/editor/GuidePage.qml` | same | modified | About page shows the niri stack repos/doctor and compositor-neutral labels.
+`ui/bar/editor/IdlePage.qml` | same | modified | Idle routing through `Compositor.idleMode`.
+`ui/bar/editor/InputPage.qml` | same | modified | The live `hyprctl getoption` seed is gated to Hyprland.
+`ui/bar/editor/persist-appearance.sh` | same | **new** | Compositor-aware animations/input persistence.
+`ui/bar/editor/persist-hypr.sh` | same | modified | Forwarder to `persist-appearance.sh`.
+`ui/bar/editor/PluginsPage.qml` | same | modified | Plugin enable/disable reload goes through `Compositor.reload()`.
+`ui/bar/editor/sysinfo.sh` | same | modified | Compositor-aware version/monitors; niri/meta repo revisions.
+`ui/bar/popups/applauncher/appLauncher.qml` | same | modified | Launches through `Compositor.execApp`.
+`ui/bar/popups/battery/BatteryPopup.qml` | same | modified | Logout through `Compositor.quit()`.
+`ui/bar/popups/battery/BatteryPopupAlt.qml` | same | modified | Logout through `Compositor.quit()`.
+`ui/panels/davincix/DavincixPicker.qml` | same | modified | Monitor names from the neutral backend list.
+`ui/panels/focustime/focus_daemon.py` | same | modified | Compositor-aware focus listener and lock detection.
+`ui/panels/idle/IdlePopup.qml` | same | modified | Mode switch through `Compositor.idleMode`.
+`ui/panels/plugins/PluginsPanel.qml` | same | modified | Plugin reload goes through `Compositor.reload()`.
+`ui/bar/popups/updater/UpdaterPopup.qml` | same | modified | Reads `niri-meta/updates.json`, the niri version state and runs `dotsniri update`.
+`ui/panels/scale/ScalePicker.qml` | same | modified | Reads/applies scale through the backend.
+`ui/plugins/screenshots/ui/ScreenshotOverlay.qml` | same | modified | Prefers `EQUISDOTS_SCREENSHOT_SCRIPT` (niri launcher); the plugin resolver remains for Hyprland.
+`ui/settings/tabs/KeybindTab.qml` | same | modified | Submap calls gated by `Compositor.hasSubmaps`; niri note.
 
 ### Neutral backend surface
 
@@ -62,7 +67,10 @@ scale, focused, refreshRate, x, y, transform, modes }`; niri millihertz and
 ### Why these files
 
 The base shell has a set of compositor-coupled touch points: direct `hyprctl`
-calls plus the session scripts (`idle-mode.sh`, `scale-menu.sh`, `exit.sh`).
+calls plus the session scripts (`idle-mode.sh`, `scale-menu.sh`, `exit.sh`) and
+the plugin enable/disable reload. The overlay is rebased on the current shell
+base (SDK `Settings`, MD3 tokens, plugin standard), so it does not regress those
+features.
 Every one that a user can reach from a widget is in this overlay: the seam
 (`Compositor`, `Config`), the leaf scripts, and the consumers
 (`ScalePicker`, `DavincixPicker`, `sysinfo.sh`, `appLauncher`, `KeybindTab`,
@@ -121,13 +129,15 @@ by the niri base config (`~/.config/niri/config.kdl`, owned by the sibling
 win, and do not also define the same single-occurrence sections:
 
 ```kdl
-include "generated/outputs.kdl"          // output "..." blocks (sole owner)
-include "generated/theme-effects.kdl"    // layout { gaps/border/shadow }, blur, window-rule
+include "generated/user-input.kdl"       // input { ... } (sole owner)
+include "generated/user-animations.kdl"  // animations { ... } (sole owner)
+include "generated/blur.kdl"             // blur { ... } (sole owner)
+include "generated/theme-colors.kdl"     // palette border colours
 include "generated/borders.kdl"          // layout { border { colors } } (after theme-effects)
+include "generated/theme-effects.kdl"    // layout { gaps/border/shadow }, window-rule
+include "generated/outputs.kdl"          // output "..." blocks (sole owner)
 include "generated/user-binds.kdl"       // binds { ... }
 include "generated/user-startup.kdl"     // spawn-sh-at-startup ...
-include "generated/user-animations.kdl"  // animations { ... } (sole owner)
-include "generated/user-input.kdl"       // input { ... } (sole owner)
 ```
 
 Rules:
@@ -135,8 +145,9 @@ Rules:
 - `layout` and `binds` deep-merge, so `borders.kdl` (colours) and
   `theme-effects.kdl` (`border width`) compose; keep `borders.kdl` after
   `theme-effects.kdl` if colour should win per property.
-- `input`, `animations` and `blur` are single-occurrence sections: the generated
-  fragments are their sole definition. `output` blocks may repeat but each
+- `input`, `animations` and `blur` are single-occurrence sections: each has its
+  own generated fragment as the sole definition (never also in `config.kdl` or
+  the modules). The installers seed them from `niri/config/niri/defaults/`. `output` blocks may repeat but each
   output name must be unique, so the base config must not define the same output
   names. A duplicate section is a `niri validate` error.
 - Validate the assembled tree: `niri validate -c ~/.config/niri/config.kdl`.
@@ -156,10 +167,11 @@ restore:
    `ui/settings/tabs/KeybindTab.qml`,
    `ui/panels/focustime/focus_daemon.py`,
    `ui/panels/idle/IdlePopup.qml`, `ui/bar/editor/IdlePage.qml`,
-    `ui/bar/BarEditor.qml`,
-    `ui/bar/popups/battery/BatteryPopup.qml`,
-    `ui/bar/popups/battery/BatteryPopupAlt.qml`, `ui/bar/Colors.qml`,
-    `ScreenshotOverlay.qml`.
+   `ui/bar/BarEditor.qml`, `ui/bar/editor/GuidePage.qml`,
+   `ui/bar/editor/PluginsPage.qml`, `ui/panels/plugins/PluginsPanel.qml`,
+   `ui/bar/popups/battery/BatteryPopup.qml`,
+   `ui/bar/popups/battery/BatteryPopupAlt.qml`, `ui/bar/Colors.qml`,
+   `ui/plugins/screenshots/ui/ScreenshotOverlay.qml`.
 2. Remove the new files: `core/compositors/Niri.qml`, `core/Effects.qml`,
    `core/scripts/effects.sh`, `core/scripts/niri-workspaces.sh`,
    `ui/bar/editor/persist-appearance.sh`.
