@@ -220,7 +220,7 @@ Item {
                     EditLabel {
                         bar: root.bar
                         width: parent.width
-                        text: "Applies via config/user-input.lua + Hyprland reload. Keyboard layout stays in General."
+                        text: "Applies through the active compositor (Lua + reload on Hyprland, generated KDL + reload on niri). Keyboard layout stays in General."
                         font.pixelSize: bar.s(11)
                         color: bar.colors.subtext0
                         wrapMode: Text.WordWrap

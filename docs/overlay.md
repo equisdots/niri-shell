@@ -15,16 +15,16 @@ Source (this repo) | Target (shell tree) | Kind | Notes
 `core/Config.qml` | `core/Config.qml` | modified | Rebased on the SDK Settings façade; keybind/startup/monitor persistence route through `Compositor`, and the monitor poller is backend-owned.
 `core/Effects.qml` | `core/Effects.qml` | **new** | Neutral effects singleton (same API as `HyprEffects`), backed by `effects.sh`.
 `core/HyprEffects.qml` | `core/HyprEffects.qml` | modified | Compatibility shim: forwards to `Effects`.
-`core/scripts/effects.sh` | `core/scripts/effects.sh` | **new** | Compositor-aware effects kernel.
+`core/scripts/effects.sh` | `core/scripts/effects.sh` | **new** | Compositor-aware effects kernel. niri seeds active opacity 1.0 (no global override of per-app opacity), writes inactive opacity explicitly, and uses the niri blur defaults (offset 3, saturation 1.1) unless the state overrides them.
 `core/scripts/niri-workspaces.sh` | `core/scripts/niri-workspaces.sh` | **new** | Workspace-state daemon for niri; writes the same `workspaces.json` shape.
-`core/scripts/watchers/kb_fetch.sh` | same | modified | Compositor-aware layout fetch.
-`core/scripts/watchers/kb_wait.sh` | same | modified | Compositor-aware layout event wait.
-`ui/bar/BarEditor.qml` | same | modified | App-scale step calls `Compositor.applyMonitorScale` (no Hyprland-only script).
-`ui/bar/Colors.qml` | same | modified | Muted `color8` active-border default (manual overrides still win).
+`core/scripts/watchers/kb_fetch.sh` | same | modified | Compositor-aware layout fetch (`XDG_CURRENT_DESKTOP` or `NIRI_SOCKET`).
+`ui/bar/BarEditor.qml` | same | modified | Rebased on shell HEAD; app-scale step calls `Compositor.applyMonitorScale` (no Hyprland-only script) and the animation persistence passes the 7-argument contract.
+`ui/bar/Colors.qml` | same | modified | Muted `color8` active-border default (manual overrides still win); base `printErrors: false` kept.
+`ui/bar/editor/AnimationsPage.qml` | same | **new** | Settings > Animations page from shell HEAD. Workspace style, special-workspace style and wrap are hidden when `Compositor.isNiri`; speed and curve stay. Footer documents Hyprland Lua vs niri KDL.
 `ui/bar/editor/GuidePage.qml` | same | modified | About page shows the niri stack repos/doctor and compositor-neutral labels.
-`ui/bar/editor/IdlePage.qml` | same | modified | Idle routing through `Compositor.idleMode`.
-`ui/bar/editor/InputPage.qml` | same | modified | The live `hyprctl getoption` seed is gated to Hyprland.
-`ui/bar/editor/persist-appearance.sh` | same | **new** | Compositor-aware animations/input persistence.
+`ui/bar/editor/IdlePage.qml` | same | modified | Idle routing through `Compositor.idleMode`; duplicate core import removed.
+`ui/bar/editor/InputPage.qml` | same | modified | The live `hyprctl getoption` seed is gated to Hyprland; footer no longer claims a Hyprland-only write path.
+`ui/bar/editor/persist-appearance.sh` | same | **new** | Compositor-aware animations/input persistence. Animation CLI: `animations <0|1> <speed> <workspace_style> <curve> <special_style> <wrap>` (validated like `persist-hypr.sh`). Hyprland emits the full Lua animation set (workspace/special styles + wraparound); niri emits KDL for enabled, speed and the `workspace-switch` duration/curve, mapping `smooth/overshot/easeInOutQuart/easeOutExpo/easeOutQuint/linear` to cubic-bezier/linear/ease-out-expo. Style, special style and wrap are parsed and ignored on niri.
 `ui/bar/editor/persist-hypr.sh` | same | modified | Forwarder to `persist-appearance.sh`.
 `ui/bar/editor/PluginsPage.qml` | same | modified | Plugin enable/disable reload goes through `Compositor.reload()`.
 `ui/bar/editor/sysinfo.sh` | same | modified | Compositor-aware version/monitors; niri/meta repo revisions.
@@ -33,7 +33,7 @@ Source (this repo) | Target (shell tree) | Kind | Notes
 `ui/bar/popups/battery/BatteryPopupAlt.qml` | same | modified | Logout through `Compositor.quit()`.
 `ui/panels/davincix/DavincixPicker.qml` | same | modified | Monitor names from the neutral backend list.
 `ui/panels/focustime/focus_daemon.py` | same | modified | Compositor-aware focus listener and lock detection.
-`ui/panels/idle/IdlePopup.qml` | same | modified | Mode switch through `Compositor.idleMode`.
+`ui/panels/idle/IdlePopup.qml` | same | modified | Mode switch through `Compositor.idleMode`; backend-neutral timer label.
 `ui/panels/plugins/PluginsPanel.qml` | same | modified | Plugin reload goes through `Compositor.reload()`.
 `ui/bar/popups/updater/UpdaterPopup.qml` | same | modified | Reads `niri-meta/updates.json`, the niri version state and runs `dotsniri update`.
 `ui/panels/scale/ScalePicker.qml` | same | modified | Reads/applies scale through the backend.
@@ -64,6 +64,16 @@ Monitor entries use the neutral shape `{ name, description, width, height,
 scale, focused, refreshRate, x, y, transform, modes }`; niri millihertz and
 `logical.*` are normalised by the backend, so callers never see the difference.
 
+Animations are persisted through the scripts rather than the backend object:
+`BarEditor` calls `persist-hypr.sh animations <enabled> <speed> <workspace_style>
+<curve> <special_style> <wrap>` (the forwarder keeps the base call site). The
+script validates all seven arguments like the shell `persist-hypr.sh`. Hyprland
+writes `config/user-animations.lua` with the workspace/special styles and
+wraparound; niri writes `generated/user-animations.kdl` with `enabled`, the
+speed-scaled durations and the `workspace-switch` curve. The Hyprland-only style
+fields are parsed and ignored on niri. `ui/bar/editor/AnimationsPage.qml` hides
+those controls when `Compositor.isNiri`.
+
 ### Why these files
 
 The base shell has a set of compositor-coupled touch points: direct `hyprctl`
@@ -74,8 +84,9 @@ features.
 Every one that a user can reach from a widget is in this overlay: the seam
 (`Compositor`, `Config`), the leaf scripts, and the consumers
 (`ScalePicker`, `DavincixPicker`, `sysinfo.sh`, `appLauncher`, `KeybindTab`,
-`focus_daemon.py`, `IdlePopup`, `IdlePage`, `BarEditor`, `BatteryPopup`,
-`BatteryPopupAlt`, plus the `Colors` border-palette derivation). They now call
+`focus_daemon.py`, `IdlePopup`, `IdlePage`, `AnimationsPage`, `BarEditor`,
+`BatteryPopup`, `BatteryPopupAlt`, plus the `Colors` border-palette
+derivation). They now call
 the active backend or branch on `XDG_CURRENT_DESKTOP`; no widget calls
 `hyprctl` directly. Base files that
 already work unchanged under niri (the QML widgets, palettes, `WlrLayershell`,
@@ -93,9 +104,10 @@ Two base consumers reference legacy names:
   forwarder delegates to `persist-appearance.sh`.
 
 A base consumer is copied only when a compositor-facing line has to change
-(`BarEditor.qml`, the two battery popups, the two idle consumers); everywhere
-else the shim keeps the overlay a pure drop-in, with no large consumer file to
-drift from the base shell.
+(`BarEditor.qml`, `AnimationsPage.qml`, `InputPage.qml`, the two battery
+popups, the two idle consumers, the updater and `appLauncher`); everywhere else
+the shim keeps the overlay a pure drop-in, with no large consumer file to drift
+from the base shell.
 
 ### Bring-up notes (niri)
 
@@ -160,21 +172,23 @@ restore:
 1. Restore the modified base files from the shell repo (or re-run the shell's
    own deploy): `core/Compositor.qml`, `core/compositors/Hyprland.qml`,
    `core/Config.qml`, `core/HyprEffects.qml`,
-   `core/scripts/watchers/kb_fetch.sh`, `core/scripts/watchers/kb_wait.sh`,
+   `core/scripts/watchers/kb_fetch.sh`,
    `ui/bar/editor/persist-hypr.sh`, `ui/panels/scale/ScalePicker.qml`,
    `ui/panels/davincix/DavincixPicker.qml`, `ui/bar/editor/sysinfo.sh`,
    `ui/bar/popups/applauncher/appLauncher.qml`,
    `ui/settings/tabs/KeybindTab.qml`,
    `ui/panels/focustime/focus_daemon.py`,
    `ui/panels/idle/IdlePopup.qml`, `ui/bar/editor/IdlePage.qml`,
-   `ui/bar/BarEditor.qml`, `ui/bar/editor/GuidePage.qml`,
-   `ui/bar/editor/PluginsPage.qml`, `ui/panels/plugins/PluginsPanel.qml`,
+   `ui/bar/editor/InputPage.qml`, `ui/bar/BarEditor.qml`,
+   `ui/bar/editor/GuidePage.qml`, `ui/bar/editor/PluginsPage.qml`,
+   `ui/panels/plugins/PluginsPanel.qml`,
+   `ui/bar/popups/updater/UpdaterPopup.qml`,
    `ui/bar/popups/battery/BatteryPopup.qml`,
    `ui/bar/popups/battery/BatteryPopupAlt.qml`, `ui/bar/Colors.qml`,
    `ui/plugins/screenshots/ui/ScreenshotOverlay.qml`.
 2. Remove the new files: `core/compositors/Niri.qml`, `core/Effects.qml`,
    `core/scripts/effects.sh`, `core/scripts/niri-workspaces.sh`,
-   `ui/bar/editor/persist-appearance.sh`.
+   `ui/bar/editor/persist-appearance.sh`, `ui/bar/editor/AnimationsPage.qml`.
 3. Optionally remove the generated niri fragments:
    `rm -rf ~/.config/niri/generated`.
 4. `settings.json` and `~/.config/hypr/` are never touched by the rollback, so
@@ -193,6 +207,9 @@ These are inherent niri 26.04 limitations, not overlay bugs:
 - No output mirroring: `mirrorOf` is not materialised under niri.
 - No live per-frame `hyprctl`-style option patch: the effects preview is a state
   update and materialises on persist.
+- No workspace transition style, special-workspace style or workspace
+  wraparound: the animation options are parsed/validated and ignored on niri;
+  only the workspace-switch duration and curve are emitted.
 - No per-device keyboard layout switch: `switch-layout` is global.
 - Dynamic workspaces: the pill row is derived (`1..N`) rather than backed by
   static workspace ids; multi-monitor `idx` collisions prefer the focused

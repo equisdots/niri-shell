@@ -197,7 +197,7 @@ Item {
     // patrón que launcherCfg: property local con merge de Config.rawSettings
     // para que la UI viva no dependa de rawSettings (setSetting no reasigna).
     property var animationsCfg: (function() {
-        let d = { enabled: true, speed: 1.0 };
+        let d = { enabled: true, speed: 1.0, workspaceStyle: "slide", workspaceCurve: "overshot", specialStyle: "slidevert", workspaceWrap: false };
         let raw = Config.rawSettings.animations;
         return (raw && typeof raw === "object") ? Object.assign({}, d, raw) : d;
     })()
@@ -248,7 +248,11 @@ Item {
                 Quickshell.env("HOME") + "/.config/hypr/scripts/quickshell/ui/bar/editor/persist-hypr.sh",
                 "animations",
                 root.animationsCfg.enabled ? "1" : "0",
-                Number(root.animationsCfg.speed).toFixed(1)
+                Number(root.animationsCfg.speed).toFixed(1),
+                String(root.animationsCfg.workspaceStyle),
+                String(root.animationsCfg.workspaceCurve),
+                String(root.animationsCfg.specialStyle),
+                root.animationsCfg.workspaceWrap ? "1" : "0"
             ]);
         }
         if (root._inputDirty) {
@@ -1868,7 +1872,7 @@ Item {
     // pendientes (closeFlush) y anima la salida antes de qs_manager.sh close.
     // Buscador (Fase 5): si el overlay está abierto, ESC lo cierra primero y
     // NO cierra el panel (el overlay devuelve el foco con onClosed).
-    Keys.onEscapePressed: {
+    Keys.onEscapePressed: (event) => {
         if (root.searchOpen) {
             root.closeSearch();
             event.accepted = true;
@@ -1880,7 +1884,7 @@ Item {
     // Phase 2: Tab / Shift+Tab cycle the visible pages (same list the rail
     // renders); ESC keeps the phase-1 contract.
     // Con el buscador abierto no cambian de página (el foco vive en el input).
-    Keys.onTabPressed: {
+    Keys.onTabPressed: (event) => {
         event.accepted = true;
         if (root.searchOpen) return;
         let nav = root.navForEngine();
@@ -1888,7 +1892,7 @@ Item {
         let idx = root.navIndex(root.currentPage);
         root.gotoPage(nav[(idx + 1) % nav.length].id);
     }
-    Keys.onBacktabPressed: {
+    Keys.onBacktabPressed: (event) => {
         event.accepted = true;
         if (root.searchOpen) return;
         let nav = root.navForEngine();

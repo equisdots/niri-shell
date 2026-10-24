@@ -13,14 +13,15 @@ Item {
     Caching { id: paths }
 
     // --- RECEIVE THE DBUS LIST FROM MAIN.QML ---
-    property var notifModel
-    property var liveNotifs
+    property var notifModel: null
+    property var liveNotifs: ({})
 
     // Ensure actionable notifications are continually bubbled to the top
     onNotifModelChanged: Qt.callLater(window.enforceNotificationSort)
     
     Connections {
-        target: window.notifModel
+        target: window.notifModel ? window.notifModel : null
+        ignoreUnknownSignals: true
         function onCountChanged() {
             Qt.callLater(window.enforceNotificationSort);
         }

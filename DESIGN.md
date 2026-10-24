@@ -62,7 +62,7 @@ change, the active backend materialises it, and the backend reloads.
 | --- | --- | --- | --- |
 | Keybinds | `keybinds[]` (`type`, `mods`, `key`, `dispatcher`, `command`) | `config/user-keybinds.lua`, `hyprctl reload` | `generated/user-binds.kdl`, `load-config-file` |
 | Startup | `startup[]` (`command`) | `config/user-startup.lua`, reload | `generated/user-startup.kdl`, reload |
-| Animations | `{ enabled, speed }` | `config/user-animations.lua`, reload | `generated/user-animations.kdl`, reload |
+| Animations | `{ enabled, speed, workspaceStyle, workspaceCurve, specialStyle, workspaceWrap }` | `config/user-animations.lua` (styles + wrap), reload | `generated/user-animations.kdl` (enabled + speed-scaled durations + `workspace-switch` curve; style/special/wrap ignored), reload |
 | Input | `{ sensitivity, accelProfile, tapToClick, naturalScroll, disableWhileTyping }` | `config/user-input.lua`, reload | `generated/user-input.kdl`, reload |
 | Effects | 12 numeric knobs | `hyprctl eval` + `window-effects.lua`/`gaps.lua` | `generated/theme-effects.kdl`, reload |
 | Borders | `{ hex, alpha, second, angle }` | `hyprctl eval 'hl.config(...)'` | `generated/borders.kdl`, reload |

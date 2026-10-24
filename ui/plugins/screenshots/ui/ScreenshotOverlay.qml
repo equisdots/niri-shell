@@ -25,8 +25,8 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore 
     focusable: true
     screen: Quickshell.cursorScreen
-    width: screen.width
-    height: screen.height
+    implicitWidth: screen.width
+    implicitHeight: screen.height
 
     Caching { id: paths }
 

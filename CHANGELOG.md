@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `ui/bar/editor/AnimationsPage.qml`: the Settings > Animations page from shell
+  HEAD. Speed and curve are shared; workspace style, special-workspace style and
+  wraparound are hidden on niri, and the footer documents the Hyprland Lua vs
+  niri KDL output.
+- Workspace animation options: the animation persistence contract is now
+  `animations <enabled> <speed> <workspace_style> <curve> <special_style>
+  <wrap>`. Hyprland emits the full Lua set (workspace/special styles,
+  wraparound); niri emits valid KDL for enabled, speed and the
+  `workspace-switch` duration/curve, mapping the Hyprland bezier names to
+  niri cubic-bezier/linear/ease-out-expo. Style, special style and wrap are
+  parsed and ignored on niri.
 - Parity with the merged Hyprland plugin stack: the overlay is rebased on the
   current shell base (SDK `Settings`, MD3 `core/Theme.qml` tokens,
   `PluginPopup`/`PluginPositionRow`, the Plugins panel and catalog). New overlay
@@ -29,9 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   exact same bar, popups, panels, widgets, settings editor and lock screen run
   on Hyprland and niri with no UI loss (`849d09d`).
 - Neutral persistence through the backend seam: `core/Config.qml`,
-  `core/Effects.qml`, the compositor-aware watchers (`kb_fetch.sh`,
-  `kb_wait.sh`) and `ui/bar/editor/persist-appearance.sh` so keybinds, startup,
-  monitors, animations and input materialise as KDL on niri (`849d09d`).
+  `core/Effects.qml`, the compositor-aware watcher `kb_fetch.sh` and
+  `ui/bar/editor/persist-appearance.sh` so keybinds, startup, monitors,
+  animations and input materialise as KDL on niri (`849d09d`).
 - `ui/bar/Colors.qml` is now part of the overlay: `borderHex("active")` derives
   from the palette's muted `color8` instead of the loud accent, so the niri
   border is a neutral grey that stays harmonious across palettes (`8ae3d24`).
@@ -44,6 +55,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Rebased the overlay on shell `805a107` and the screenshots plugin `18e742e`:
+  `BarEditor` (workspace animation defaults + four extra persist args),
+  `AnimationsPage` (new), the battery popups, `DavincixPicker`, `Colors`,
+  `appLauncher`, `UpdaterPopup` and `IdlePage` now carry only the niri deltas
+  (`Compositor.quit`/`execApp`/`idleMode`/`applyMonitorScale`, neutral monitor
+  list, `color8` border, niri-meta updater). `ScreenshotOverlay` keeps
+  `EQUISDOTS_SCREENSHOT_SCRIPT` and the new `implicitWidth`/`implicitHeight`
+  surface fix.
 - Rebased every overlay file on the current shell base: the pre-SDK
   `core/Config.qml` (and the stale MD3/pre-plugin variants of `BarEditor`,
   `Colors`, `IdlePage`, `InputPage`, `appLauncher`, the battery popups,
@@ -58,6 +77,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `core/scripts/effects.sh`: niri writes the inactive-opacity rule explicitly
+  and skips the global active-opacity rule at the 1.0 sentinel, so the per-app
+  opacity window rules are no longer shadowed by the generated fragment. The
+  blur fragment now uses the niri defaults (offset 3, saturation 1.1) unless the
+  state sets `blur_offset`/`blur_size` or `blur_saturation`.
+- `core/scripts/watchers/kb_fetch.sh` and `core/scripts/effects.sh` accept
+  `NIRI_SOCKET` in addition to `XDG_CURRENT_DESKTOP`, matching
+  `core/Compositor.qml`. Deleted the dead `kb_wait.sh` (the shell removed it and
+  nothing consumes it).
+- Rebased overlay consumers no longer produce the runtime warnings fixed in
+  `a9c478b`/`fe9e2e2`: null defaults and guarded `Connections` targets in the
+  battery popups, explicit `Settings.location`, `printErrors: false` on the
+  palette `FileView`s, and arrow-function `Keys` handlers. `IdlePage` has a
+  single core import; `IdlePopup`/`InputPage` labels are backend-neutral.
 - The niri writers now keep the single-occurrence sections unique: `effects.sh`
   writes the global `blur {}` block to `generated/blur.kdl` (not inside
   `theme-effects.kdl`), and `persist-appearance.sh input` emits a complete

@@ -73,7 +73,7 @@ Item {
         from: 0; to: Math.PI * 2; duration: 90000; loops: Animation.Infinite; running: true
     }
 
-    Keys.onEscapePressed: {
+    Keys.onEscapePressed: (event) => {
         Quickshell.execDetached(["bash", Quickshell.env("HOME") + "/.config/hypr/scripts/qs_manager.sh", "close"]);
         event.accepted = true;
     }
