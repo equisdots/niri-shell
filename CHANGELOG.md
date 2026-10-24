@@ -77,6 +77,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `core/compositors/Niri.qml`: generated keybinds no longer mark every `exec`
+  action `allow-when-locked=true`; only `bindl`/`bindel` (or an explicitly
+  locked action) do. This closes the lock-screen app-launch hole and matches
+  the Hyprland backend.
 - `core/scripts/effects.sh`: niri writes the inactive-opacity rule explicitly
   and skips the global active-opacity rule at the 1.0 sentinel, so the per-app
   opacity window rules are no longer shadowed by the generated fragment. The
