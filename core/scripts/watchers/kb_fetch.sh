@@ -7,14 +7,19 @@
 #   Hyprland: hyprctl devices -j -> .keyboards[].active_keymap
 #   niri:     niri msg --json keyboard-layouts -> .names[.current_idx]
 #
-# XDG_CURRENT_DESKTOP selects the branch; Hyprland is the fallback so a
-# Hyprland user is unaffected by the niri meta.
+# XDG_CURRENT_DESKTOP (or a set NIRI_SOCKET) selects the branch; Hyprland is
+# the fallback so a Hyprland user is unaffected by the niri meta.
 set -u
 
 desktop="$(printf '%s' "${XDG_CURRENT_DESKTOP:-}" | tr '[:upper:]' '[:lower:]')"
 
 case "$desktop" in
-    *niri*)
+    *niri*) NIRI=1 ;;
+    *)      [[ -n "${NIRI_SOCKET:-}" ]] && NIRI=1 || NIRI=0 ;;
+esac
+
+case "$NIRI" in
+    1)
         raw="$(LC_ALL=C niri msg --json keyboard-layouts 2>/dev/null \
             | jq -r '.names[.current_idx] // empty' 2>/dev/null)"
         if [ -z "$raw" ] || [ "$raw" = "null" ]; then

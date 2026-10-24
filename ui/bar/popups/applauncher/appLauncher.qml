@@ -225,7 +225,7 @@ Item {
         }
     }
 
-    Keys.onEscapePressed: {
+    Keys.onEscapePressed: (event) => {
         Quickshell.execDetached(["bash", Quickshell.env("HOME") + "/.config/hypr/scripts/qs_manager.sh", "close"]);
         event.accepted = true;
     }
@@ -325,7 +325,7 @@ Item {
 
                     onTextChanged: filterApps(text)
 
-                    Keys.onDownPressed: {
+                    Keys.onDownPressed: (event) => {
                         window.isKeyboardNav = true;
                         keyboardNavTimer.restart();
                         if (appList.currentIndex < appModel.count - 1) {
@@ -333,7 +333,7 @@ Item {
                         }
                         event.accepted = true;
                     }
-                    Keys.onUpPressed: {
+                    Keys.onUpPressed: (event) => {
                         window.isKeyboardNav = true;
                         keyboardNavTimer.restart();
                         if (appList.currentIndex > 0) {
@@ -341,13 +341,13 @@ Item {
                         }
                         event.accepted = true;
                     }
-                    Keys.onReturnPressed: {
+                    Keys.onReturnPressed: (event) => {
                         if (appList.currentIndex >= 0 && appList.currentIndex < appModel.count) {
                             launchApp(appModel.get(appList.currentIndex).exec);
                         }
                         event.accepted = true;
                     }
-                    Keys.onEscapePressed: {
+                    Keys.onEscapePressed: (event) => {
                         Quickshell.execDetached(["bash", Quickshell.env("HOME") + "/.config/hypr/scripts/qs_manager.sh", "close"]);
                         event.accepted = true;
                     }

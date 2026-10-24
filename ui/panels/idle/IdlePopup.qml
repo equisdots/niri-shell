@@ -205,7 +205,7 @@ Item {
                         }
                         Text {
                             Layout.fillWidth: true
-                            text: "hypridle timers active"
+                            text: "Idle timers active"
                             font.family: "Hack Nerd Font"; font.pixelSize: s(10)
                             color: window.overlay0
                         }

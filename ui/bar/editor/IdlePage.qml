@@ -5,7 +5,6 @@ import Quickshell
 import Quickshell.Io
 import "../edit"
 import "../../../core"
-import "../../../core"
 
 // ═══════════════════════════════════════════════════════════════════════════
 // IdlePage — BarEditor tab (grupo System): modo de energía del sistema.

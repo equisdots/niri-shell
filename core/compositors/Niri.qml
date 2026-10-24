@@ -234,7 +234,10 @@ QtObject {
         switch (dispatcher) {
             case "exec":
             case "exec-once":
-                return { action: "spawn-sh", args: JSON.stringify(command), locked: true };
+                // Never mark exec binds allow-when-locked by default: that would
+                // let the lock screen launch applications. Honor the bind type
+                // in persistKeybinds() instead.
+                return { action: "spawn-sh", args: JSON.stringify(command) };
             case "workspace":
                 if (command === "e+1") return { action: "focus-workspace-down" };
                 if (command === "e-1") return { action: "focus-workspace-up" };
@@ -276,7 +279,8 @@ QtObject {
             if (!act) { lines.push("    // [skipped] " + b.dispatcher + " (no niri equivalent)"); continue; }
             let hot = backend.modTokens(b.mods).concat([key]).join("+");
             let action = act.action + (act.args ? " " + act.args : "") + ";";
-            let flags = act.locked ? " allow-when-locked=true" : "";
+            let locked = act.locked === true || b.type === "bindl" || b.type === "bindel";
+            let flags = locked ? " allow-when-locked=true" : "";
             let line = "    " + hot + flags + " { " + action + " }";
             if (map[hot] === undefined) order.push(hot);
             map[hot] = line;
