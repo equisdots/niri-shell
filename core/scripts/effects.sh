@@ -258,11 +258,13 @@ cmd_apply() {
 # niri path
 # ═══════════════════════════════════════════════════════════════════════════
 
-# niri defaults. active_opacity 1.0 is the "no global override" sentinel so the
-# generated global rule does not shadow the per-app opacity window rules; the
-# niri base already dims inactive windows. blur_size maps to the niri blur
-# offset (default 3) and blur_saturation mirrors the niri blur defaults (1.1).
-NIRI_DEFAULTS='{"active_opacity":1.0,"inactive_opacity":0.80,"rounding":20,"blur_size":3,"blur_passes":3,"blur_saturation":1.1,"gaps_in":16,"gaps_out":25,"border_size":2,"shadow_range":35,"shadow_render_power":5,"shadow_offset_x":0,"shadow_offset_y":10}'
+# niri defaults mirror modules/window-rules.kdl (active 0.85, inactive 0.80).
+# The generated global opacity rules are only emitted when the user changes
+# those defaults: at the defaults the static rules apply and the per-app
+# opacity window rules that follow them still win. blur_size maps to the niri
+# blur offset (default 3) and blur_saturation mirrors the niri blur defaults
+# (1.1).
+NIRI_DEFAULTS='{"active_opacity":0.85,"inactive_opacity":0.80,"rounding":20,"blur_size":3,"blur_passes":3,"blur_saturation":1.1,"gaps_in":16,"gaps_out":25,"border_size":2,"shadow_range":35,"shadow_render_power":5,"shadow_offset_x":0,"shadow_offset_y":10}'
 
 niri_seed_state() {
     [[ -f "$STATE" ]] && return 0
@@ -301,7 +303,7 @@ niri_preview() {
 niri_write_kdl() {
     local state="$1" tmp
     local ao io ro bp bo bsat gr go bw sr sp ox oy
-    ao="$(jq -r '.active_opacity // 1.0'      <<<"$state")"
+    ao="$(jq -r '.active_opacity // 0.85'     <<<"$state")"
     io="$(jq -r '.inactive_opacity // 0.80'   <<<"$state")"
     ro="$(jq -r '.rounding // 20'             <<<"$state")"
     bp="$(jq -r '.blur_passes // 3'           <<<"$state")"
@@ -333,23 +335,25 @@ niri_write_kdl() {
 
     # Opacity is split into three owners:
     #   · rounding: always written (geometry only).
-    #   · active opacity: skipped at the 1.0 sentinel so it does not shadow the
-    #     per-app opacity window rules; written only when the user changes it.
-    #   · inactive opacity: always written explicitly, because an active-only
-    #     global rule would otherwise hide the base is-active=false rule.
+    #   · active/inactive opacity: written only when the user changes the
+    #     static defaults (0.85/0.80 in modules/window-rules.kdl). At the
+    #     defaults the static rules apply and the per-app opacity window rules
+    #     that follow them still win; an explicit change intentionally wins.
     local opacity_rules=""
-    if awk -v o="$ao" 'BEGIN { exit !(o != 1.0) }'; then
+    if awk -v o="$ao" 'BEGIN { exit !(o != 0.85) }'; then
         opacity_rules="window-rule {
     match is-active=true
     opacity $ao
 }
 "
     fi
-    opacity_rules="${opacity_rules}window-rule {
+    if awk -v o="$io" 'BEGIN { exit !(o != 0.80) }'; then
+        opacity_rules="${opacity_rules}window-rule {
     match is-active=false
     opacity $io
 }
 "
+    fi
 
     tmp="$(mktemp "$CONF_DIR/.niri-effects.XXXXXX")" || return 1
     # blur is a single-occurrence section: write it to its own fragment so the

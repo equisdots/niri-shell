@@ -81,10 +81,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   action `allow-when-locked=true`; only `bindl`/`bindel` (or an explicitly
   locked action) do. This closes the lock-screen app-launch hole and matches
   the Hyprland backend.
-- `core/scripts/effects.sh`: niri writes the inactive-opacity rule explicitly
-  and skips the global active-opacity rule at the 1.0 sentinel, so the per-app
-  opacity window rules are no longer shadowed by the generated fragment. The
-  blur fragment now uses the niri defaults (offset 3, saturation 1.1) unless the
+- `core/scripts/effects.sh`: the generated global opacity rules are only
+  emitted when the user changes the static defaults (active 0.85 / inactive
+  0.80 in `modules/window-rules.kdl`), so the per-app opacity window rules are
+  no longer shadowed at defaults while an explicit change still wins. The blur
+  fragment now uses the niri defaults (offset 3, saturation 1.1) unless the
   state sets `blur_offset`/`blur_size` or `blur_saturation`.
 - `core/scripts/watchers/kb_fetch.sh` and `core/scripts/effects.sh` accept
   `NIRI_SOCKET` in addition to `XDG_CURRENT_DESKTOP`, matching
