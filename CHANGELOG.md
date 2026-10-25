@@ -55,6 +55,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Removed the screenshots overlay file: screenshots/recording moved to the
+  separate `equisdots/plugins-niri` repository, whose plugin calls
+  `niri_screenshot.sh` and `niri_record.sh` directly. `niri-meta` re-deploys
+  the niri plugin after the shell overlays so the migration cannot restore the
+  old Hyprland implementation.
+
 - Rebased the overlay on shell `805a107` and the screenshots plugin `18e742e`:
   `BarEditor` (workspace animation defaults + four extra persist args),
   `AnimationsPage` (new), the battery popups, `DavincixPicker`, `Colors`,

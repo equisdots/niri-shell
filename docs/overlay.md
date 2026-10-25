@@ -37,7 +37,6 @@ Source (this repo) | Target (shell tree) | Kind | Notes
 `ui/panels/plugins/PluginsPanel.qml` | same | modified | Plugin reload goes through `Compositor.reload()`.
 `ui/bar/popups/updater/UpdaterPopup.qml` | same | modified | Reads `niri-meta/updates.json`, the niri version state and runs `dotsniri update`.
 `ui/panels/scale/ScalePicker.qml` | same | modified | Reads/applies scale through the backend.
-`ui/plugins/screenshots/ui/ScreenshotOverlay.qml` | same | modified | Prefers `EQUISDOTS_SCREENSHOT_SCRIPT` (niri launcher); the plugin resolver remains for Hyprland.
 `ui/settings/tabs/KeybindTab.qml` | same | modified | Submap calls gated by `Compositor.hasSubmaps`; niri note.
 
 ### Neutral backend surface
@@ -185,7 +184,6 @@ restore:
    `ui/bar/popups/updater/UpdaterPopup.qml`,
    `ui/bar/popups/battery/BatteryPopup.qml`,
    `ui/bar/popups/battery/BatteryPopupAlt.qml`, `ui/bar/Colors.qml`,
-   `ui/plugins/screenshots/ui/ScreenshotOverlay.qml`.
 2. Remove the new files: `core/compositors/Niri.qml`, `core/Effects.qml`,
    `core/scripts/effects.sh`, `core/scripts/niri-workspaces.sh`,
    `ui/bar/editor/persist-appearance.sh`, `ui/bar/editor/AnimationsPage.qml`.
