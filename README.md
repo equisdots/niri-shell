@@ -69,7 +69,9 @@ The Settings > Animations page is shipped as
 the workspace-style, special-workspace and wraparound controls (no niri
 equivalent), keeps speed and workspace curve, and adds niri-only **Window open**
 and **Window close** preset rows (Overshot, Expo, Quad, Cubic, Linear, Spring,
-Bouncy, Off). The persistence script uses a nine-argument contract:
+Bouncy, Circle, Off). Circle uses niri's custom-shader API (`open_color` /
+`close_color`), so it is version-sensitive; the other presets use built-in
+easing/springs. The persistence script uses a nine-argument contract:
 `animations <enabled> <speed> <workspace_style> <curve> <special_style>
 <wrap> <window_open> <window_close>`. Hyprland writes
 `config/user-animations.lua` (Lua) and ignores the two extra args; niri writes

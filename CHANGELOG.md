@@ -15,11 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   niri KDL output.
 - Window animation presets (niri-only UI): **Window open** and **Window close**
   rows in Settings > Animations choose Overshot, Expo, Quad, Cubic, Linear,
-  Spring, Bouncy or Off. The selection is stored as `windowOpen`/`windowClose`
-  in `settings.json` and emitted to `generated/user-animations.kdl`; easing
-  durations scale with the speed multiplier and springs ignore it. The new
-  controls are gated on `Compositor.isNiri`, so they never appear under
-  Hyprland.
+  Spring, Bouncy, Circle or Off. The selection is stored as
+  `windowOpen`/`windowClose` in `settings.json` and emitted to
+  `generated/user-animations.kdl`; easing durations scale with the speed
+  multiplier and springs ignore it. Circle uses niri's custom-shader API
+  (`open_color` / `close_color`, expanding/shrinking mask, 250 ms linear) and is
+  version-sensitive. The new controls are gated on `Compositor.isNiri`, so they
+  never appear under Hyprland.
 - Workspace animation options: the animation persistence contract is now
   `animations <enabled> <speed> <workspace_style> <curve> <special_style>
   <wrap> <window_open> <window_close>`. Hyprland emits the full Lua set

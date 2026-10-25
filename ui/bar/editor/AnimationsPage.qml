@@ -179,6 +179,7 @@ Item {
                                 { id: "linear",   label: "Linear",   icon: "󰁔" },
                                 { id: "spring",   label: "Spring",   icon: "󰒲" },
                                 { id: "bouncy",   label: "Bouncy",   icon: "󰔟" },
+                                { id: "circle",   label: "Circle",   icon: "󰕘" },
                                 { id: "off",      label: "Off",      icon: "󰅖" }
                             ]
                             delegate: OptionCard {
@@ -216,6 +217,7 @@ Item {
                                 { id: "linear",   label: "Linear",   icon: "󰁔" },
                                 { id: "spring",   label: "Spring",   icon: "󰒲" },
                                 { id: "bouncy",   label: "Bouncy",   icon: "󰔟" },
+                                { id: "circle",   label: "Circle",   icon: "󰕘" },
                                 { id: "off",      label: "Off",      icon: "󰅖" }
                             ]
                             delegate: OptionCard {
@@ -233,7 +235,7 @@ Item {
                         visible: Compositor.isNiri
                         bar: root.bar
                         width: parent.width
-                        text: "Window open/close presets are niri-only. The speed multiplier scales easing durations; Spring and Bouncy ignore it. Overshot 200 ms and Expo 150 ms match the current niri defaults."
+                        text: "Window open/close presets are niri-only. The speed multiplier scales easing durations; Spring and Bouncy ignore it. Circle uses a niri 26.04 custom shader (version-sensitive). Overshot 200 ms and Expo 150 ms match the current niri defaults."
                         font.pixelSize: bar.s(11)
                         color: bar.colors.subtext0
                         wrapMode: Text.WordWrap

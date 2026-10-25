@@ -153,11 +153,46 @@ run_animations_hypr() {
     echo "user-animations.lua saved (enabled=$enabled speed=$speed style=$wstyle curve=$wcurve special=$sstyle wrap=$wrap)"
 }
 
+# niri_circle_shader <window-open|window-close> <speed>
+# Custom circular reveal (open) / shrink (close) shader. The open shader is
+# the expanding_circle example shipped with niri 26.04; the close shader uses
+# the same mask with inverted progress. Custom shaders are version-sensitive.
+niri_circle_shader() {
+    local name="$1" speed="$2" fn progress
+    if [[ "$name" == "window-open" ]]; then
+        fn="open_color"
+        progress="niri_clamped_progress"
+    else
+        fn="close_color"
+        progress="1.0 - niri_clamped_progress"
+    fi
+    printf '    %s {\n' "$name"
+    printf '        duration-ms %s\n' "$(round1 250 "$speed")"
+    printf '        curve "linear"\n'
+    printf '        custom-shader r"\n'
+    printf '            vec4 %s(vec3 coords_geo, vec3 size_geo) {\n' "$fn"
+    printf '                vec3 coords_tex = niri_geo_to_tex * coords_geo;\n'
+    printf '                vec4 color = texture2D(niri_tex, coords_tex.st);\n'
+    printf '                vec2 coords = (coords_geo.xy - vec2(0.5, 0.5)) * size_geo.xy * 2.0;\n'
+    printf '                coords = coords / length(size_geo.xy);\n'
+    printf '                float p = %s;\n' "$progress"
+    printf '                if (p * p <= dot(coords, coords))\n'
+    printf '                    color = vec4(0.0);\n'
+    printf '                return color;\n'
+    printf '            }\n'
+    printf '        "\n'
+    printf '    }\n'
+}
+
 # niri_window_block <window-open|window-close> <preset> <speed>
 # Emits the niri animation node body. The speed multiplier scales easing
 # durations; springs intentionally ignore it.
 niri_window_block() {
     local name="$1" preset="$2" speed="$3"
+    if [[ "$preset" == circle ]]; then
+        niri_circle_shader "$name" "$speed"
+        return 0
+    fi
     printf '    %s {\n' "$name"
     case "$preset" in
         overshot) printf '        duration-ms %s\n        curve "cubic-bezier" 0.13 0.99 0.29 1.15\n' "$(round1 200 "$speed")" ;;
@@ -300,8 +335,8 @@ case "$MODE" in
         case "$WSTYLE" in slide|slidefade|slidevert|slidefadevert|fade) ;; *) WSTYLE=slide ;; esac
         case "$SSTYLE" in slide|slidefade|slidevert|slidefadevert|fade) ;; *) SSTYLE=slidevert ;; esac
         case "$WCURVE" in smooth|overshot|easeInOutQuart|easeOutExpo|easeOutQuint|linear) ;; *) WCURVE=overshot ;; esac
-        case "$WOPEN" in overshot|expo|quad|cubic|linear|spring|bouncy|off) ;; *) WOPEN=overshot ;; esac
-        case "$WCLOSE" in overshot|expo|quad|cubic|linear|spring|bouncy|off) ;; *) WCLOSE=expo ;; esac
+        case "$WOPEN" in overshot|expo|quad|cubic|linear|spring|bouncy|circle|off) ;; *) WOPEN=overshot ;; esac
+        case "$WCLOSE" in overshot|expo|quad|cubic|linear|spring|bouncy|circle|off) ;; *) WCLOSE=expo ;; esac
         [[ "$WRAP" == "1" ]] || WRAP=0
         if [[ "$NIRI" == "1" ]]; then
             run_animations_niri "$ENABLED" "$SPEED" "$WSTYLE" "$WCURVE" "$SSTYLE" "$WRAP" "$WOPEN" "$WCLOSE"
