@@ -1146,6 +1146,11 @@ Item {
     }
 
     Component.onCompleted: {
+        // Build/refresh the thumbnail cache on every open, even when the
+        // picker is opened directly (IPC/settings) instead of via
+        // qs_manager.sh. The kernel locks concurrent runs, so this is cheap.
+        Quickshell.execDetached([window.cliPath(), "thumbs"]);
+
         Quickshell.execDetached(["bash", "-c", "mkdir -p '" + decodeURIComponent(window.searchDir.replace("file://", "")) + "'"]);
 
         window.loadMonitors();
