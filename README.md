@@ -118,8 +118,9 @@ niri. The compositor-specific plugin touch points are covered here:
 
 - `ui/panels/plugins/PluginsPanel.qml` and `ui/bar/editor/PluginsPage.qml`
   reload through `Compositor.reload()` (KDL reload on niri).
-- `ui/plugins/screenshots/ui/ScreenshotOverlay.qml` honours
-  `EQUISDOTS_SCREENSHOT_SCRIPT`, exported by `niri_screenshot.sh`.
+- The screenshots/recording plugin lives in the separate
+  `equisdots/plugins-niri` repository and calls `niri_screenshot.sh` /
+  `niri_record.sh` directly (the overlay no longer ships a screenshot file).
 - Plugin-provided keybind actions are reached through the static KDL binds in
   the sibling `niri` repository; niri does not evaluate `hypr.lua` fragments at
   runtime.
