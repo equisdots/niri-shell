@@ -431,10 +431,22 @@ Item {
     // Outer radius for the host-drawn panel shadow (matches the panel bg).
     readonly property real shadowRadius: root.s(21)
     // Grupos de navegación: definidos en core/EditorNav.js (7 grupos
-    // colapsables, orden/visibilidad/estado desde settings.editor).
-    property var navGroups: EditorNav.configure(
-        EditorNav.withPlugins(EditorNav.groups(), PluginsCatalog.plugins),
-        Config.rawSettings.editor)
+    // colapsables, orden/visibilidad/estado desde settings.editor). On niri the
+    // window-effects page is relabeled "Effects": it is backed by the niri
+    // effects writer through the HyprEffects shim, not by Hyprland.
+    function buildNavGroups(cfg) {
+        let groups = EditorNav.withPlugins(EditorNav.groups(), PluginsCatalog.plugins);
+        if (Compositor.isNiri) {
+            for (let g = 0; g < groups.length; g++) {
+                let items = (groups[g] && groups[g].items) ? groups[g].items : [];
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].id === "d_hyprland") items[i].label = "Effects";
+                }
+            }
+        }
+        return EditorNav.configure(groups, cfg);
+    }
+    property var navGroups: buildNavGroups(Config.rawSettings.editor)
     // Colapsar/desplegar un grupo: persiste en settings.editor.collapsed.
     function toggleGroup(id) {
         let cfg = (Config.rawSettings.editor && typeof Config.rawSettings.editor === "object")
@@ -450,8 +462,7 @@ Item {
         // Config.setSetting muta rawSettings SIN reasignar la propiedad (los
         // bindings que leen Config.rawSettings no re-evaluan): refrescamos el
         // modelo de navegacion de forma imperativa para plegar/desplegar ya.
-        root.navGroups = EditorNav.configure(
-            EditorNav.withPlugins(EditorNav.groups(), PluginsCatalog.plugins), next);
+        root.navGroups = buildNavGroups(next);
         Qt.callLater(root.syncNavPill);
     }
     // Item del rail por id (lo registran los delegates): la píldora se coloca
