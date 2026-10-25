@@ -83,6 +83,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `ui/panels/davincix/DavincixPicker.qml`: opening the wallpaper picker now
+  starts `davincix thumbs` itself, so the grid populates even when the picker
+  is opened directly (IPC/settings) instead of through `qs_manager.sh`.
+- `ui/bar/editor/HyprlandPage.qml` + `ui/bar/BarEditor.qml`: on niri the page
+  is relabeled **Effects** (nav and title), the description/footer reference the
+  generated KDL instead of Hyprland Lua, and the unsupported Shadow Power knob
+  is hidden. The effects singleton remains the same shim used by the Window
+  Controls widget.
 - `core/compositors/Niri.qml`: generated keybinds no longer mark every `exec`
   action `allow-when-locked=true`; only `bindl`/`bindel` (or an explicitly
   locked action) do. This closes the lock-screen app-launch hole and matches
