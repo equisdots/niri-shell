@@ -67,11 +67,15 @@ All niri writes land in `~/.config/niri/generated/` and are applied with
 The Settings > Animations page is shipped as
 `ui/bar/editor/AnimationsPage.qml` from the current shell base. On niri it hides
 the workspace-style, special-workspace and wraparound controls (no niri
-equivalent) and keeps speed and curve. The persistence script uses the same
-seven-argument contract on both compositors: Hyprland writes
-`config/user-animations.lua` (Lua), niri writes `generated/user-animations.kdl`
-(KDL) with the workspace-switch duration/curve. Style, special style and wrap
-are parsed and ignored on niri.
+equivalent), keeps speed and workspace curve, and adds niri-only **Window open**
+and **Window close** preset rows (Overshot, Expo, Quad, Cubic, Linear, Spring,
+Bouncy, Off). The persistence script uses a nine-argument contract:
+`animations <enabled> <speed> <workspace_style> <curve> <special_style>
+<wrap> <window_open> <window_close>`. Hyprland writes
+`config/user-animations.lua` (Lua) and ignores the two extra args; niri writes
+`generated/user-animations.kdl` (KDL) with the workspace-switch
+duration/curve plus the two window presets. Style, special style and wrap are
+parsed and ignored on niri.
 
 ## Known QML gotchas
 

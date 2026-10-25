@@ -13,13 +13,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   HEAD. Speed and curve are shared; workspace style, special-workspace style and
   wraparound are hidden on niri, and the footer documents the Hyprland Lua vs
   niri KDL output.
+- Window animation presets (niri-only UI): **Window open** and **Window close**
+  rows in Settings > Animations choose Overshot, Expo, Quad, Cubic, Linear,
+  Spring, Bouncy or Off. The selection is stored as `windowOpen`/`windowClose`
+  in `settings.json` and emitted to `generated/user-animations.kdl`; easing
+  durations scale with the speed multiplier and springs ignore it. The new
+  controls are gated on `Compositor.isNiri`, so they never appear under
+  Hyprland.
 - Workspace animation options: the animation persistence contract is now
   `animations <enabled> <speed> <workspace_style> <curve> <special_style>
-  <wrap>`. Hyprland emits the full Lua set (workspace/special styles,
-  wraparound); niri emits valid KDL for enabled, speed and the
-  `workspace-switch` duration/curve, mapping the Hyprland bezier names to
-  niri cubic-bezier/linear/ease-out-expo. Style, special style and wrap are
-  parsed and ignored on niri.
+  <wrap> <window_open> <window_close>`. Hyprland emits the full Lua set
+  (workspace/special styles, wraparound) and ignores the two extra args; niri
+  emits valid KDL for enabled, speed, the `workspace-switch` duration/curve and
+  the two window presets, mapping the Hyprland bezier names to niri
+  cubic-bezier/linear/ease-out-expo. Style, special style and wrap are parsed
+  and ignored on niri.
 - Parity with the merged Hyprland plugin stack: the overlay is rebased on the
   current shell base (SDK `Settings`, MD3 `core/Theme.qml` tokens,
   `PluginPopup`/`PluginPositionRow`, the Plugins panel and catalog). New overlay
