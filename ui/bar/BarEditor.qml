@@ -197,7 +197,7 @@ Item {
     // patrón que launcherCfg: property local con merge de Config.rawSettings
     // para que la UI viva no dependa de rawSettings (setSetting no reasigna).
     property var animationsCfg: (function() {
-        let d = { enabled: true, speed: 1.0, workspaceStyle: "slide", workspaceCurve: "overshot", specialStyle: "slidevert", workspaceWrap: false };
+        let d = { enabled: true, speed: 1.0, workspaceStyle: "slide", workspaceCurve: "overshot", specialStyle: "slidevert", workspaceWrap: false, windowOpen: "overshot", windowClose: "expo" };
         let raw = Config.rawSettings.animations;
         return (raw && typeof raw === "object") ? Object.assign({}, d, raw) : d;
     })()
@@ -252,7 +252,9 @@ Item {
                 String(root.animationsCfg.workspaceStyle),
                 String(root.animationsCfg.workspaceCurve),
                 String(root.animationsCfg.specialStyle),
-                root.animationsCfg.workspaceWrap ? "1" : "0"
+                root.animationsCfg.workspaceWrap ? "1" : "0",
+                String(root.animationsCfg.windowOpen),
+                String(root.animationsCfg.windowClose)
             ]);
         }
         if (root._inputDirty) {

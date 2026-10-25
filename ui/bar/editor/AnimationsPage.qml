@@ -150,6 +150,95 @@ Item {
                         })
                     }
 
+                    // ── Window open / close (niri) ──────────────────────────
+                    // niri supports independent window-open/window-close
+                    // easing/spring presets. Hyprland keeps its own page and
+                    // never sees these controls because the overlay files are
+                    // only deployed with the niri-shell overlay and the
+                    // sections are gated on Compositor.isNiri.
+                    Text {
+                        visible: Compositor.isNiri
+                        text: "Window open"
+                        font.family: "Hack Nerd Font"
+                        font.weight: Font.Black
+                        font.pixelSize: bar.s(16)
+                        color: bar.colors.text
+                    }
+                    GridLayout {
+                        visible: Compositor.isNiri
+                        width: parent.width
+                        columns: 4
+                        columnSpacing: bar.s(Theme.gapMd)
+                        rowSpacing: bar.s(Theme.gapMd)
+                        Repeater {
+                            model: [
+                                { id: "overshot", label: "Overshot", icon: "󰁝" },
+                                { id: "expo",     label: "Expo",     icon: "󰓅" },
+                                { id: "quad",     label: "Quad",     icon: "󰐊" },
+                                { id: "cubic",    label: "Cubic",    icon: "󰒮" },
+                                { id: "linear",   label: "Linear",   icon: "󰁔" },
+                                { id: "spring",   label: "Spring",   icon: "󰒲" },
+                                { id: "bouncy",   label: "Bouncy",   icon: "󰔟" },
+                                { id: "off",      label: "Off",      icon: "󰅖" }
+                            ]
+                            delegate: OptionCard {
+                                required property var modelData
+                                Layout.fillWidth: true
+                                bar: root.bar
+                                icon: modelData.icon
+                                label: modelData.label
+                                active: root.bar.animationsCfg.windowOpen === modelData.id
+                                onActivated: root.bar.applyAnimations({ windowOpen: modelData.id })
+                            }
+                        }
+                    }
+
+                    Text {
+                        visible: Compositor.isNiri
+                        text: "Window close"
+                        font.family: "Hack Nerd Font"
+                        font.weight: Font.Black
+                        font.pixelSize: bar.s(16)
+                        color: bar.colors.text
+                    }
+                    GridLayout {
+                        visible: Compositor.isNiri
+                        width: parent.width
+                        columns: 4
+                        columnSpacing: bar.s(Theme.gapMd)
+                        rowSpacing: bar.s(Theme.gapMd)
+                        Repeater {
+                            model: [
+                                { id: "overshot", label: "Overshot", icon: "󰁝" },
+                                { id: "expo",     label: "Expo",     icon: "󰓅" },
+                                { id: "quad",     label: "Quad",     icon: "󰐊" },
+                                { id: "cubic",    label: "Cubic",    icon: "󰒮" },
+                                { id: "linear",   label: "Linear",   icon: "󰁔" },
+                                { id: "spring",   label: "Spring",   icon: "󰒲" },
+                                { id: "bouncy",   label: "Bouncy",   icon: "󰔟" },
+                                { id: "off",      label: "Off",      icon: "󰅖" }
+                            ]
+                            delegate: OptionCard {
+                                required property var modelData
+                                Layout.fillWidth: true
+                                bar: root.bar
+                                icon: modelData.icon
+                                label: modelData.label
+                                active: root.bar.animationsCfg.windowClose === modelData.id
+                                onActivated: root.bar.applyAnimations({ windowClose: modelData.id })
+                            }
+                        }
+                    }
+                    EditLabel {
+                        visible: Compositor.isNiri
+                        bar: root.bar
+                        width: parent.width
+                        text: "Window open/close presets are niri-only. The speed multiplier scales easing durations; Spring and Bouncy ignore it. Overshot 200 ms and Expo 150 ms match the current niri defaults."
+                        font.pixelSize: bar.s(11)
+                        color: bar.colors.subtext0
+                        wrapMode: Text.WordWrap
+                    }
+
                     // ── Workspace transitions ───────────────────────────────
                     Text {
                         text: "Workspace transitions"
@@ -185,7 +274,7 @@ Item {
                     }
 
                     Text {
-                        text: "Curve"
+                        text: Compositor.isNiri ? "Workspace curve" : "Curve"
                         font.family: "Hack Nerd Font"
                         font.weight: Font.Black
                         font.pixelSize: bar.s(16)
@@ -265,7 +354,9 @@ Item {
                     EditLabel {
                         bar: root.bar
                         width: parent.width
-                        text: "Hyprland writes config/user-animations.lua (Lua) and niri writes generated/user-animations.kdl (KDL). The curve drives the workspace slide/window movement on Hyprland and the workspace-switch transition on niri. Workspace styles, special workspaces and wraparound are Hyprland-only: niri parses and ignores them. Higher speed value = slower animation."
+                        text: Compositor.isNiri
+                            ? "niri writes generated/user-animations.kdl (KDL). The workspace curve drives workspace-switch; window open/close presets above are niri-only. Workspace styles, special workspaces and wraparound are Hyprland-only and ignored by niri. Higher speed value = slower animation."
+                            : "Hyprland writes config/user-animations.lua (Lua). The curve drives workspace slide/window movement; workspace styles, special workspaces and wraparound are Hyprland-only. Higher speed value = slower animation."
                         font.pixelSize: bar.s(11)
                         color: bar.colors.subtext0
                         wrapMode: Text.WordWrap
