@@ -416,8 +416,9 @@ QtObject {
 
     // Global display scale: niri's runtime setter is per output and temporary,
     // so apply it to every output (matching scale-menu.sh's "everything"
-    // semantics) and record it in settings.json so the next applyMonitors
-    // materialises it into generated/outputs.kdl.
+    // semantics), record it in settings.json and snapshot the live outputs into
+    // generated/outputs.kdl. The snapshot is what makes the scale survive a
+    // restart: `niri msg output scale` alone is forgotten on the next session.
     function applyMonitorScale(name, scale) {
         let s = String(scale);
         if (!/^[0-9.]+$/.test(s)) return;
@@ -428,7 +429,9 @@ QtObject {
             "jq --argjson s " + s + " '.monitors = ((.monitors // []) | map(.scale = $s))' " +
             "\"$HOME/.config/hypr/settings.json\" > \"$tmp\" && mv \"$tmp\" \"$HOME/.config/hypr/settings.json\"; fi; " +
             "for o in $(niri msg --json outputs 2>/dev/null | jq -r 'keys[]' 2>/dev/null); do " +
-            "niri msg output \"$o\" scale " + s + " >/dev/null 2>&1; done";
+            "niri msg output \"$o\" scale " + s + " >/dev/null 2>&1; done; " +
+            "if [ -f \"$HOME/.config/niri/scripts/niri_monitor_manager.sh\" ]; then " +
+            "bash \"$HOME/.config/niri/scripts/niri_monitor_manager.sh\" save >/dev/null 2>&1; fi";
         backend.sh(cmd);
     }
 
