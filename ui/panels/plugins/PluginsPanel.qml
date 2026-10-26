@@ -41,6 +41,14 @@ Item {
         function gotoPage(id) { root.selected = ""; }
     }
 
+    // Solid menu chrome. This panel used to paint only its cards, so the page
+    // background (header, list margins and the plugin settings pages loaded by
+    // the Loader below) showed the desktop through. Force opaque alpha even
+    // when glass mode is on: these menus are meant to sit on the palette's
+    // solid base, with the tonal surfaceContainer* cards on top.
+    readonly property color menuBase: Qt.rgba(themeColors.base.r, themeColors.base.g,
+                                              themeColors.base.b, 1.0)
+
     onActiveModeChanged: if (root.activeMode !== "" && root.activeMode !== root.selected) root.selected = root.activeMode
 
     // ── filtering ────────────────────────────────────────────────────────────
@@ -143,6 +151,15 @@ Item {
             if (p.type === "hypr" || p.type === "mixed") Compositor.reload();
             PluginsCatalog.refresh();
         });
+    }
+
+    // ══ PAGE BACKGROUND ═══════════════════════════════════════════════════
+    Rectangle {
+        anchors.fill: parent
+        radius: Theme.radiusLg
+        color: root.menuBase
+        border.width: 1
+        border.color: themeColors.surface0
     }
 
     // ══ LIST ═══════════════════════════════════════════════════════════════
