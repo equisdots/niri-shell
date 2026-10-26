@@ -65,6 +65,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `ui/panels/scale/ScalePicker.qml`: the display-scale ladder matches
+  `niri/scripts/niri_scale.sh` and now includes 75% and 70% below 80%.
 - Removed the screenshots overlay file: screenshots/recording moved to the
   separate `equisdots/plugins-niri` repository, whose plugin calls
   `niri_screenshot.sh` and `niri_record.sh` directly. `niri-meta` re-deploys
@@ -93,6 +95,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `core/compositors/Niri.qml`: `applyMonitorScale` now snapshots the live
+  output state into `generated/outputs.kdl` after applying the scale. niri's
+  `niri msg output … scale` setter is runtime-only, so the scale chosen from
+  the picker (or the bar editor) used to revert on the next session; it is now
+  persisted and restored on restart.
 - `ui/panels/davincix/DavincixPicker.qml`: opening the wallpaper picker now
   starts `davincix thumbs` itself, so the grid populates even when the picker
   is opened directly (IPC/settings) instead of through `qs_manager.sh`.

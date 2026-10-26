@@ -50,7 +50,7 @@ implement every one.
 | `monitorsFromOutput(text)` → array | parses `hyprctl -j monitors` | parses the outputs+focused envelope (`decodeNiri`) |
 | `monitorList()` → array | last normalised snapshot | last normalised snapshot |
 | `refreshMonitorList()` / `signal monitorListReady(list)` | re-runs the snapshot Process | re-runs the snapshot Process |
-| `applyMonitorScale(name, scale)` | `scale-menu.sh <scale>` (unchanged global path) | `niri msg output <name> scale` for every output + records `scale` in `settings.json` |
+| `applyMonitorScale(name, scale)` | `scale-menu.sh <scale>` (unchanged global path) | `niri msg output <name> scale` for every output, records `scale` in `settings.json`, then snapshots the live state to `generated/outputs.kdl` (via `niri_monitor_manager.sh save`) so it survives a restart |
 | `applyMonitorConfig(descriptor)` | `hyprctl eval 'hl.monitor({...})'` | `niri msg output <name> mode/scale/position/transform/vrr/off` |
 | `versionCommand` / `compositorVersion()` / `refreshCompositorVersion()` | `hyprctl version -j` → `.tag` | `niri msg --json version` → `.compositor` |
 | `execApp(command)` | `Quickshell.execDetached(["bash","-c", …])` | same (no compositor involvement) |

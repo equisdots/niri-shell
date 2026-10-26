@@ -48,9 +48,10 @@ Item {
     // -------------------------------------------------------------------------
     // STATE & LOGIC
     // -------------------------------------------------------------------------
-    // Kept in step with the ladder in scripts/scale-menu.sh, which only lists
-    // scales that divide the panel into whole pixels.
-    readonly property var ladder: [0.8, 1.0, 1.25, 1.5, 2.0]
+    // Kept in step with niri/scripts/niri_scale.sh (Hyprland keeps the same
+    // ladder in scale-menu.sh). 0.75 and 0.7 are the low-end rungs; 0.7 rounds
+    // logical pixels, so it can look slightly soft.
+    readonly property var ladder: [0.7, 0.75, 0.8, 1.0, 1.25, 1.5, 2.0]
 
     property real currentScale: 1.0
     property int monWidth: 1920
