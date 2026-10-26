@@ -317,13 +317,14 @@ QtObject {
         return map[t] || "normal";
     }
 
-    // niri matches an output by connector name or by "make model serial"
-    // (which survives connector renames). Only use the EDID form when all
-    // three parts are present; otherwise fall back to the connector name.
+    // niri matches an output by connector name or by "make model serial".
+    // Prefer the connector: the EDID form requires a real serial, and niri's
+    // JSON reports null for panels without one, so a make/model-only string
+    // never matches.
     function outputKey(d) {
-        let desc = String(d.description || "").trim();
-        if (desc !== "" && desc.split(/\s+/).length >= 3) return desc;
-        return d.name;
+        let name = String(d.name || "").trim();
+        if (name !== "") return name;
+        return String(d.description || "").trim();
     }
 
     function kdlOutput(d) {
