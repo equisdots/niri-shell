@@ -7,6 +7,12 @@ are the default.
 
 ## File-by-file map
 
+> Davinci note: the wallpaper picker is now compositor-neutral in the shared
+> shell (`core/Compositor.qml` + `core/compositors/Hyprland.qml` expose the
+> monitor list). This overlay no longer ships `DavinciPicker.qml`; niri uses
+> the base picker unchanged.
+
+
 Source (this repo) | Target (shell tree) | Kind | Notes
 --- | --- | --- | ---
 `core/Compositor.qml` | `core/Compositor.qml` | modified | Adds backend selection on `XDG_CURRENT_DESKTOP` **or** a set `NIRI_SOCKET`, the neutral persistence methods and the neutral monitor/version/launch/session helpers. The backend signal relay is held in the `_backendConn` property (a `QtObject` has no default property).
@@ -31,7 +37,6 @@ Source (this repo) | Target (shell tree) | Kind | Notes
 `ui/bar/popups/applauncher/appLauncher.qml` | same | modified | Launches through `Compositor.execApp`.
 `ui/bar/popups/battery/BatteryPopup.qml` | same | modified | Logout through `Compositor.quit()`.
 `ui/bar/popups/battery/BatteryPopupAlt.qml` | same | modified | Logout through `Compositor.quit()`.
-`ui/panels/davincix/DavincixPicker.qml` | same | modified | Monitor names from the neutral backend list.
 `ui/panels/focustime/focus_daemon.py` | same | modified | Compositor-aware focus listener and lock detection.
 `ui/panels/idle/IdlePopup.qml` | same | modified | Mode switch through `Compositor.idleMode`; backend-neutral timer label.
 `ui/panels/plugins/PluginsPanel.qml` | same | modified | Plugin reload goes through `Compositor.reload()`.
@@ -82,7 +87,7 @@ base (SDK `Settings`, MD3 tokens, plugin standard), so it does not regress those
 features.
 Every one that a user can reach from a widget is in this overlay: the seam
 (`Compositor`, `Config`), the leaf scripts, and the consumers
-(`ScalePicker`, `DavincixPicker`, `sysinfo.sh`, `appLauncher`, `KeybindTab`,
+(`ScalePicker`, `sysinfo.sh`, `appLauncher`, `KeybindTab`,
 `focus_daemon.py`, `IdlePopup`, `IdlePage`, `AnimationsPage`, `BarEditor`,
 `BatteryPopup`, `BatteryPopupAlt`, plus the `Colors` border-palette
 derivation). They now call
@@ -173,7 +178,7 @@ restore:
    `core/Config.qml`, `core/HyprEffects.qml`,
    `core/scripts/watchers/kb_fetch.sh`,
    `ui/bar/editor/persist-hypr.sh`, `ui/panels/scale/ScalePicker.qml`,
-   `ui/panels/davincix/DavincixPicker.qml`, `ui/bar/editor/sysinfo.sh`,
+   `ui/bar/editor/sysinfo.sh`,
    `ui/bar/popups/applauncher/appLauncher.qml`,
    `ui/settings/tabs/KeybindTab.qml`,
    `ui/panels/focustime/focus_daemon.py`,
