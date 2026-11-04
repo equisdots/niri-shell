@@ -75,7 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Rebased the overlay on shell `805a107` and the screenshots plugin `18e742e`:
   `BarEditor` (workspace animation defaults + four extra persist args),
-  `AnimationsPage` (new), the battery popups, `DavincixPicker`, `Colors`,
+  `AnimationsPage` (new), the battery popups, `DavinciPicker`, `Colors`,
   `appLauncher`, `UpdaterPopup` and `IdlePage` now carry only the niri deltas
   (`Compositor.quit`/`execApp`/`idleMode`/`applyMonitorScale`, neutral monitor
   list, `color8` border, niri-meta updater). `ScreenshotOverlay` keeps
@@ -84,7 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Rebased every overlay file on the current shell base: the pre-SDK
   `core/Config.qml` (and the stale MD3/pre-plugin variants of `BarEditor`,
   `Colors`, `IdlePage`, `InputPage`, `appLauncher`, the battery popups,
-  `DavincixPicker`, `IdlePopup`, `ScalePicker` and `KeybindTab`) are gone; only
+  `DavinciPicker`, `IdlePopup`, `ScalePicker` and `KeybindTab`) are gone; only
   the compositor-specific deltas remain.
 - The screenshots overlay moved with its plugin: the overlay now targets
   `ui/plugins/screenshots/ui/ScreenshotOverlay.qml` (the old root
@@ -100,8 +100,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `niri msg output … scale` setter is runtime-only, so the scale chosen from
   the picker (or the bar editor) used to revert on the next session; it is now
   persisted and restored on restart.
-- `ui/panels/davincix/DavincixPicker.qml`: opening the wallpaper picker now
-  starts `davincix thumbs` itself, so the grid populates even when the picker
+- `ui/panels/davinci/DavinciPicker.qml`: opening the wallpaper picker now
+  starts `davinci thumbs` itself, so the grid populates even when the picker
   is opened directly (IPC/settings) instead of through `qs_manager.sh`.
 - `ui/bar/editor/HyprlandPage.qml` + `ui/bar/BarEditor.qml`: on niri the page
   is relabeled **Effects** (nav and title), the description/footer reference the

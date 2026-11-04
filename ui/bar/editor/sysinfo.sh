@@ -128,7 +128,7 @@ emit_rev() {
         echo "repo_$name="
     fi
 }
-for r in shell plugins plugin-api plugin-sdk nyx timex palettes theme-sync davincix dots; do
+for r in shell plugins plugin-api plugin-sdk nyx timex palettes theme-sync davinci dots; do
     emit_rev "$r" "$HOME/.local/share/equisdots"
 done
 for r in niri niri-shell niri-meta niri-login nyx-niri; do
