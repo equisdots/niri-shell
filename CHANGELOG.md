@@ -95,6 +95,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `core/compositors/Hyprland.qml`: the Hyprland keybind writer generated
+  invalid 0.57 binds from the settings panel — stored mods were written
+  verbatim (`$mainMod SHIFT_L + K`; `$mainMod` is not a Lua variable and
+  space-separated modifiers are rejected as an unknown key). It now expands
+  `$mainMod` to `SUPER`, joins modifiers with `" + "`, maps `binde` to
+  `repeating = true` and accepts `bindr` as `release = true`, matching the
+  shared shell backend.
 - `core/compositors/Niri.qml`: `applyMonitorScale` now snapshots the live
   output state into `generated/outputs.kdl` after applying the scale. niri's
   `niri msg output … scale` setter is runtime-only, so the scale chosen from
